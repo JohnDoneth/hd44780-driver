@@ -1,5 +1,5 @@
 [package]
-name = "hd44780-hal"
+name = "hd44780-driver"
 version = "0.2.0"
 keywords = ["no-std", "lcd", "embedded-hal-driver", "embedded-hal", "hd44780"]
 categories = ["embedded", "hardware-support", "no-std"]
