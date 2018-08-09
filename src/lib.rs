@@ -16,7 +16,7 @@ use entry_mode::{CursorMode, EntryMode};
 
 pub mod display_mode;
 
-use display_mode::DisplayMode;
+pub use display_mode::DisplayMode;
 
 pub struct HD44780<D: DelayUs<u16> + DelayMs<u8>, B: DataBus> {
     bus: B,

@@ -20,14 +20,15 @@ use metro_m0::{CorePeripherals, Peripherals};
 
 extern crate hd44780_driver;
 
-use hd44780_driver::HD44780;
+use hd44780_driver::{HD44780, DisplayMode};
 
 extern crate embedded_hal;
 
 fn busy_loop(){
+    #[allow(unused_variables)]
     let mut i = 0;
 
-    for x in 0..10000 {
+    for _ in 0..50000 {
         i += 1;
     }
 }
@@ -66,6 +67,12 @@ fn main() {
 
     //lcd.set_cursor_mode(CursorMode::Increment);
     lcd.set_autoscroll(true);
+
+    lcd.set_display_mode(DisplayMode {
+        cursor_visible  : false,
+        cursor_blink    : false,
+        display_visible : true,
+    });
 
     let string = "Hello, world! ";
 
