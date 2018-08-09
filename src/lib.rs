@@ -385,7 +385,7 @@ where
 {
     /// Unshifts the display and sets the cursor position to 0
     ///
-    /// ```
+    /// ```rust,ignore
     /// lcd.reset();
     /// ```
     pub fn reset(&mut self) {
@@ -397,7 +397,7 @@ where
 
     /// Set if the display should be on, if the cursor should be visible, and if the cursor should blink
     ///
-    /// ```
+    /// ```rust,ignore
     /// // Set the display to be on, the cursor to be visible, and the cursor to be blinking.
     /// lcd.set_display_mode(true, true, true);
     /// ```
@@ -436,7 +436,7 @@ where
 
     /// Clear the entire display
     ///
-    /// ```
+    /// ```rust,ignore
     /// lcd.clear();
     /// ```
     pub fn clear(&mut self) {
@@ -448,7 +448,7 @@ where
 
     /// Set the cursor position
     ///
-    /// ```
+    /// ```rust,ignore
     /// // Move to line 2
     /// lcd.set_cursor_pos(40)
     /// ```
@@ -464,7 +464,7 @@ where
 
     /// Shift just the cursor to the left or the right
     ///
-    /// ```
+    /// ```rust,ignore
     /// lcd.shift_cursor(Direction::Left);
     /// lcd.shift_cursor(Direction::Right);
     /// ```
@@ -482,7 +482,7 @@ where
 
     /// Shift the entire display to the left or the right
     ///
-    /// ```
+    /// ```rust,ignore
     /// lcd.shift_display(Direction::Left);
     /// lcd.shift_display(Direction::Right);
     /// ```
@@ -586,7 +586,7 @@ where
 
     /// Writes an entire string to the `HD44780`
     ///
-    /// ```
+    /// ```rust,ignore
     /// lcd.write_str("Hello, world!");
     /// ```
     pub fn write_str(&mut self, string: &str) {
@@ -597,7 +597,7 @@ where
 
     /// Write a single character to the `HD44780`
     ///
-    /// ```
+    /// ```rust,ignore
     /// lcd.write_char('A');
     /// ```
     pub fn write_char(&mut self, data: char) {
