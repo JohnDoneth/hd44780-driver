@@ -1,4 +1,3 @@
-
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::digital::OutputPin;
 
@@ -41,7 +40,6 @@ impl<
         D7: OutputPin,
     > EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
-
     pub fn from_pins(
         rs: RS,
         en: EN,
@@ -55,7 +53,16 @@ impl<
         d7: D7,
     ) -> EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7> {
         EightBitBus {
-            rs, en, d0, d1, d2, d3, d4, d5, d6, d7,
+            rs,
+            en,
+            d0,
+            d1,
+            d2,
+            d3,
+            d4,
+            d5,
+            d6,
+            d7,
         }
     }
 

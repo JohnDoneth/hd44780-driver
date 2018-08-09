@@ -12,7 +12,7 @@ use bus::{DataBus, EightBitBus, FourBitBus};
 
 pub mod entry_mode;
 
-use entry_mode::{EntryMode, CursorMode};
+use entry_mode::{CursorMode, EntryMode};
 
 pub mod display_mode;
 
@@ -70,9 +70,7 @@ impl<
         delay: D,
     ) -> HD44780<D, EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>> {
         let mut hd = HD44780 {
-            bus: EightBitBus::from_pins(
-                rs, en, d0, d1, d2, d3, d4, d5, d6, d7,
-            ),
+            bus: EightBitBus::from_pins(rs, en, d0, d1, d2, d3, d4, d5, d6, d7),
             delay,
             entry_mode: EntryMode::default(),
             display_mode: DisplayMode::default(),
@@ -122,11 +120,8 @@ impl<
         d7: D7,
         delay: D,
     ) -> HD44780<D, FourBitBus<RS, EN, D4, D5, D6, D7>> {
-        
         let mut hd = HD44780 {
-            bus: FourBitBus::from_pins(
-                rs, en, d4, d5, d6, d7,
-            ),
+            bus: FourBitBus::from_pins(rs, en, d4, d5, d6, d7),
             delay,
             entry_mode: EntryMode::default(),
             display_mode: DisplayMode::default(),
@@ -152,13 +147,12 @@ where
         self.write_command(0b0000_0010);
     }
 
-    /// Set if the display should be on, if the cursor should be 
+    /// Set if the display should be on, if the cursor should be
     /// visible, and if the cursor should blink
     ///
-    /// Note: This is equivilent to calling all of the other relavent 
+    /// Note: This is equivilent to calling all of the other relavent
     /// methods however this operation does it all in one go to the `HD44780`
-    pub fn set_display_mode(&mut self, display_mode : DisplayMode) {
-        
+    pub fn set_display_mode(&mut self, display_mode: DisplayMode) {
         self.display_mode = display_mode;
 
         let cmd_byte = self.display_mode.as_byte();
@@ -172,70 +166,60 @@ where
     /// lcd.clear();
     /// ```
     pub fn clear(&mut self) {
-
         self.write_command(0b0000_0001);
-
     }
 
-    /// If enabled, automatically scroll the display when a new 
+    /// If enabled, automatically scroll the display when a new
     /// character is written to the display
     ///
     /// ```rust,ignore
     /// lcd.set_autoscroll(true);
     /// ```
-    pub fn set_autoscroll(&mut self, enabled : bool){
-        
+    pub fn set_autoscroll(&mut self, enabled: bool) {
         self.entry_mode.shift_mode = enabled.into();
 
         let cmd = self.entry_mode.as_byte();
 
         self.write_command(cmd);
-        
     }
 
     /// Set if the cursor should be visible
-    pub fn set_cursor_visible(&mut self, visible : bool){
-        
+    pub fn set_cursor_visible(&mut self, visible: bool) {
         self.display_mode.cursor_visible = visible;
 
         let cmd = self.display_mode.as_byte();
 
         self.write_command(cmd);
-        
     }
 
     /// Set if the characters on the display should be visible
-    pub fn set_display_visible(&mut self, visible : bool){
-        
+    pub fn set_display_visible(&mut self, visible: bool) {
         self.display_mode.display_visible = visible;
 
         let cmd = self.display_mode.as_byte();
 
         self.write_command(cmd);
-        
     }
 
     /// Set if the cursor should blink
-    pub fn set_cursor_blink(&mut self, blink : bool){
-        
+    pub fn set_cursor_blink(&mut self, blink: bool) {
         self.display_mode.cursor_blink = blink;
 
         let cmd = self.display_mode.as_byte();
 
         self.write_command(cmd);
-        
     }
 
-    /// Set which way the cursor will move when a new character is written 
+    /// Set which way the cursor will move when a new character is written
     ///
     /// ```rust,ignore
-    /// // Move right (Default) when a new character is written 
+    /// // Move right (Default) when a new character is written
     /// lcd.set_cursor_mode(CursorMode::Right)
     ///
-    /// // Move left when a new character is written 
+    /// // Move left when a new character is written
     /// lcd.set_cursor_mode(CursorMode::Left)
     /// ```
-    pub fn set_cursor_mode(&mut self, mode : CursorMode){
+    pub fn set_cursor_mode(&mut self, mode: CursorMode) {
         self.entry_mode.cursor_mode = mode;
 
         let cmd = self.entry_mode.as_byte();
@@ -308,7 +292,7 @@ where
         self.delay.delay_us(100);
     }
 
-    fn write_command(&mut self, cmd: u8){
+    fn write_command(&mut self, cmd: u8) {
         self.bus.write(cmd, false, &mut self.delay);
 
         // Wait for the command to be processed
@@ -349,7 +333,8 @@ where
         self.delay.delay_us(100);
 
         // Set entry mode
-        self.bus.write(self.entry_mode.as_byte(), false, &mut self.delay);
+        self.bus
+            .write(self.entry_mode.as_byte(), false, &mut self.delay);
 
         // Wait for the command to be processed
         self.delay.delay_us(100);
@@ -395,7 +380,8 @@ where
         self.delay.delay_us(100);
 
         // Set entry mode
-        self.bus.write(self.entry_mode.as_byte(), false, &mut self.delay);
+        self.bus
+            .write(self.entry_mode.as_byte(), false, &mut self.delay);
 
         // Wait for the command to be processed
         self.delay.delay_us(100);

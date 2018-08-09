@@ -1,4 +1,3 @@
-
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 
 mod eightbit;

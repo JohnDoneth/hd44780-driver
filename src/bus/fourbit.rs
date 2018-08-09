@@ -1,4 +1,3 @@
-
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::digital::OutputPin;
 
@@ -23,7 +22,6 @@ pub struct FourBitBus<
 impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, D7: OutputPin>
     FourBitBus<RS, EN, D4, D5, D6, D7>
 {
-
     pub fn from_pins(
         rs: RS,
         en: EN,
@@ -33,7 +31,12 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
         d7: D7,
     ) -> FourBitBus<RS, EN, D4, D5, D6, D7> {
         FourBitBus {
-            rs, en, d4, d5, d6, d7,
+            rs,
+            en,
+            d4,
+            d5,
+            d6,
+            d7,
         }
     }
 
@@ -104,7 +107,6 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
     DataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
 {
     fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) {
-        
         if data {
             self.rs.set_high();
         } else {
