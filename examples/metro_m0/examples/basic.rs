@@ -18,9 +18,9 @@ use metro_m0::clock::GenericClockController;
 use metro_m0::delay::Delay;
 use metro_m0::{CorePeripherals, Peripherals};
 
-extern crate hd44780_hal;
+extern crate hd44780_driver;
 
-use hd44780_hal::HD44780;
+use hd44780_driver::HD44780;
 
 fn main() {
     let mut peripherals = Peripherals::take().unwrap();

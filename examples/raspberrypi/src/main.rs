@@ -1,10 +1,10 @@
 extern crate linux_embedded_hal;
-extern crate hd44780_hal;
+extern crate hd44780_driver;
 
 use linux_embedded_hal::{Delay, Pin};
 use linux_embedded_hal::sysfs_gpio::Direction;
 
-use hd44780_hal::HD44780;
+use hd44780_driver::HD44780;
 
 fn main() {
 

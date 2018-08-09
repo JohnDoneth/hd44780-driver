@@ -7,7 +7,7 @@ license = "MIT"
 
 [dependencies]
 cortex-m = "~0.4"
-hd44780-hal = { path = "../.." }
+hd44780-driver = { path = "../.." }
 atsamd21-hal = "~0.1"
 embedded-hal = "~0.2"
 metro_m0 = { git = "https://github.com/wez/atsamd21-rs.git" }

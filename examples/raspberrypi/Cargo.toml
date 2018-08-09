@@ -5,4 +5,4 @@ authors = ["John Doneth <Doneth7@gmail.com>"]
 
 [dependencies]
 linux-embedded-hal = "0.2"
-hd44780-hal = { path = "../.." }
+hd44780-driver = { path = "../.." }
