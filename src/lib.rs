@@ -6,255 +6,23 @@ use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::blocking::delay::DelayUs;
 use embedded_hal::digital::OutputPin;
 
-pub trait DataBus {
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D);
+pub mod bus;
 
-    // TODO
-    // fn read(...)
-}
+use bus::{DataBus, EightBitBus, FourBitBus};
 
-pub struct EightBitBus<
-    RS: OutputPin,
-    EN: OutputPin,
-    D0: OutputPin,
-    D1: OutputPin,
-    D2: OutputPin,
-    D3: OutputPin,
-    D4: OutputPin,
-    D5: OutputPin,
-    D6: OutputPin,
-    D7: OutputPin,
-> {
-    rs: RS,
-    en: EN,
-    d0: D0,
-    d1: D1,
-    d2: D2,
-    d3: D3,
-    d4: D4,
-    d5: D5,
-    d6: D6,
-    d7: D7,
-}
+pub mod entry_mode;
 
-impl<
-        RS: OutputPin,
-        EN: OutputPin,
-        D0: OutputPin,
-        D1: OutputPin,
-        D2: OutputPin,
-        D3: OutputPin,
-        D4: OutputPin,
-        D5: OutputPin,
-        D6: OutputPin,
-        D7: OutputPin,
-    > EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
-{
-    fn set_bus_bits(&mut self, data: u8) {
-        let db0: bool = (0b0000_0001 & data) != 0;
-        let db1: bool = (0b0000_0010 & data) != 0;
-        let db2: bool = (0b0000_0100 & data) != 0;
-        let db3: bool = (0b0000_1000 & data) != 0;
-        let db4: bool = (0b0001_0000 & data) != 0;
-        let db5: bool = (0b0010_0000 & data) != 0;
-        let db6: bool = (0b0100_0000 & data) != 0;
-        let db7: bool = (0b1000_0000 & data) != 0;
+use entry_mode::{EntryMode, CursorMode};
 
-        if db0 {
-            self.d0.set_high();
-        } else {
-            self.d0.set_low();
-        }
+pub mod display_mode;
 
-        if db1 {
-            self.d1.set_high();
-        } else {
-            self.d1.set_low();
-        }
-
-        if db2 {
-            self.d2.set_high();
-        } else {
-            self.d2.set_low();
-        }
-
-        if db3 {
-            self.d3.set_high();
-        } else {
-            self.d3.set_low();
-        }
-
-        if db4 {
-            self.d4.set_high();
-        } else {
-            self.d4.set_low();
-        }
-
-        if db5 {
-            self.d5.set_high();
-        } else {
-            self.d5.set_low();
-        }
-
-        if db6 {
-            self.d6.set_high();
-        } else {
-            self.d6.set_low();
-        }
-
-        if db7 {
-            self.d7.set_high();
-        } else {
-            self.d7.set_low();
-        }
-    }
-}
-
-impl<
-        RS: OutputPin,
-        EN: OutputPin,
-        D0: OutputPin,
-        D1: OutputPin,
-        D2: OutputPin,
-        D3: OutputPin,
-        D4: OutputPin,
-        D5: OutputPin,
-        D6: OutputPin,
-        D7: OutputPin,
-    > DataBus for EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
-{
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) {
-        if data {
-            self.rs.set_high();
-        } else {
-            self.rs.set_low();
-        }
-
-        self.set_bus_bits(byte);
-
-        self.en.set_high();
-        delay.delay_ms(2u8);
-        self.en.set_low();
-
-        if data {
-            self.rs.set_low();
-        }
-    }
-}
-
-pub struct FourBitBus<
-    RS: OutputPin,
-    EN: OutputPin,
-    D4: OutputPin,
-    D5: OutputPin,
-    D6: OutputPin,
-    D7: OutputPin,
-> {
-    rs: RS,
-    en: EN,
-    d4: D4,
-    d5: D5,
-    d6: D6,
-    d7: D7,
-}
-
-impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, D7: OutputPin>
-    FourBitBus<RS, EN, D4, D5, D6, D7>
-{
-    fn write_lower_nibble(&mut self, data: u8) {
-        let db0: bool = (0b0000_0001 & data) != 0;
-        let db1: bool = (0b0000_0010 & data) != 0;
-        let db2: bool = (0b0000_0100 & data) != 0;
-        let db3: bool = (0b0000_1000 & data) != 0;
-
-        if db0 {
-            self.d4.set_high();
-        } else {
-            self.d4.set_low();
-        }
-
-        if db1 {
-            self.d5.set_high();
-        } else {
-            self.d5.set_low();
-        }
-
-        if db2 {
-            self.d6.set_high();
-        } else {
-            self.d6.set_low();
-        }
-
-        if db3 {
-            self.d7.set_high();
-        } else {
-            self.d7.set_low();
-        }
-    }
-
-    fn write_upper_nibble(&mut self, data: u8) {
-        let db4: bool = (0b0001_0000 & data) != 0;
-        let db5: bool = (0b0010_0000 & data) != 0;
-        let db6: bool = (0b0100_0000 & data) != 0;
-        let db7: bool = (0b1000_0000 & data) != 0;
-
-        if db4 {
-            self.d4.set_high();
-        } else {
-            self.d4.set_low();
-        }
-
-        if db5 {
-            self.d5.set_high();
-        } else {
-            self.d5.set_low();
-        }
-
-        if db6 {
-            self.d6.set_high();
-        } else {
-            self.d6.set_low();
-        }
-
-        if db7 {
-            self.d7.set_high();
-        } else {
-            self.d7.set_low();
-        }
-    }
-}
-
-impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, D7: OutputPin>
-    DataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
-{
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) {
-        if data {
-            self.rs.set_high();
-        } else {
-            self.rs.set_low();
-        }
-
-        self.write_upper_nibble(byte);
-
-        self.en.set_high();
-        delay.delay_ms(2u8);
-        self.en.set_low();
-
-        self.write_lower_nibble(byte);
-
-        self.en.set_high();
-        delay.delay_ms(2u8);
-        self.en.set_low();
-
-        if data {
-            self.rs.set_low();
-        }
-    }
-}
+use display_mode::DisplayMode;
 
 pub struct HD44780<D: DelayUs<u16> + DelayMs<u8>, B: DataBus> {
     bus: B,
     delay: D,
+    entry_mode: EntryMode,
+    display_mode: DisplayMode,
 }
 
 /// Used in the direction argument for shifting the cursor and the display
@@ -302,19 +70,12 @@ impl<
         delay: D,
     ) -> HD44780<D, EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>> {
         let mut hd = HD44780 {
-            bus: EightBitBus {
-                rs,
-                en,
-                d0,
-                d1,
-                d2,
-                d3,
-                d4,
-                d5,
-                d6,
-                d7,
-            },
+            bus: EightBitBus::from_pins(
+                rs, en, d0, d1, d2, d3, d4, d5, d6, d7,
+            ),
             delay,
+            entry_mode: EntryMode::default(),
+            display_mode: DisplayMode::default(),
         };
 
         hd.init_8bit();
@@ -345,7 +106,8 @@ impl<
     /// is data on the 4 data pins and that it should read them in.
     ///
     /// This mode operates differently than 8 bit mode by using 4 less
-    /// pins for data, which is nice on devices with less I/O
+    /// pins for data, which is nice on devices with less I/O although
+    /// the I/O takes a 'bit' longer
     ///
     /// Instead of commands being sent byte by byte each command is
     /// broken up into it's upper and lower nibbles (4 bits) before
@@ -360,16 +122,14 @@ impl<
         d7: D7,
         delay: D,
     ) -> HD44780<D, FourBitBus<RS, EN, D4, D5, D6, D7>> {
+        
         let mut hd = HD44780 {
-            bus: FourBitBus {
-                rs,
-                en,
-                d4,
-                d5,
-                d6,
-                d7,
-            },
+            bus: FourBitBus::from_pins(
+                rs, en, d4, d5, d6, d7,
+            ),
             delay,
+            entry_mode: EntryMode::default(),
+            display_mode: DisplayMode::default(),
         };
 
         hd.init_4bit();
@@ -389,49 +149,21 @@ where
     /// lcd.reset();
     /// ```
     pub fn reset(&mut self) {
-        self.bus.write(0b0000_0010, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(150);
+        self.write_command(0b0000_0010);
     }
 
-    /// Set if the display should be on, if the cursor should be visible, and if the cursor should blink
+    /// Set if the display should be on, if the cursor should be 
+    /// visible, and if the cursor should blink
     ///
-    /// ```rust,ignore
-    /// // Set the display to be on, the cursor to be visible, and the cursor to be blinking.
-    /// lcd.set_display_mode(true, true, true);
-    /// ```
-    pub fn set_display_mode(&mut self, display_on: bool, cursor_visible: bool, cursor_blink: bool) {
-        let display_bit = {
-            if display_on {
-                0b0000_0100
-            } else {
-                0b0000_0000
-            }
-        };
+    /// Note: This is equivilent to calling all of the other relavent 
+    /// methods however this operation does it all in one go to the `HD44780`
+    pub fn set_display_mode(&mut self, display_mode : DisplayMode) {
+        
+        self.display_mode = display_mode;
 
-        let cursor_visible_bit = {
-            if cursor_visible {
-                0b0000_0010
-            } else {
-                0b0000_0000
-            }
-        };
+        let cmd_byte = self.display_mode.as_byte();
 
-        let cursor_blink_bit = {
-            if cursor_blink {
-                0b0000_0001
-            } else {
-                0b0000_0000
-            }
-        };
-
-        let cmd_byte = 0b0000_1000 | display_bit | cursor_visible_bit | cursor_blink_bit;
-
-        self.bus.write(cmd_byte, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(150);
+        self.write_command(cmd_byte);
     }
 
     /// Clear the entire display
@@ -440,10 +172,75 @@ where
     /// lcd.clear();
     /// ```
     pub fn clear(&mut self) {
-        self.bus.write(0b0000_0001, false, &mut self.delay);
 
-        // Wait for the command to be processed
-        self.delay.delay_ms(15u8);
+        self.write_command(0b0000_0001);
+
+    }
+
+    /// If enabled, automatically scroll the display when a new 
+    /// character is written to the display
+    ///
+    /// ```rust,ignore
+    /// lcd.set_autoscroll(true);
+    /// ```
+    pub fn set_autoscroll(&mut self, enabled : bool){
+        
+        self.entry_mode.shift_mode = enabled.into();
+
+        let cmd = self.entry_mode.as_byte();
+
+        self.write_command(cmd);
+        
+    }
+
+    /// Set if the cursor should be visible
+    pub fn set_cursor_visible(&mut self, visible : bool){
+        
+        self.display_mode.cursor_visible = visible;
+
+        let cmd = self.display_mode.as_byte();
+
+        self.write_command(cmd);
+        
+    }
+
+    /// Set if the characters on the display should be visible
+    pub fn set_display_visible(&mut self, visible : bool){
+        
+        self.display_mode.display_visible = visible;
+
+        let cmd = self.display_mode.as_byte();
+
+        self.write_command(cmd);
+        
+    }
+
+    /// Set if the cursor should blink
+    pub fn set_cursor_blink(&mut self, blink : bool){
+        
+        self.display_mode.cursor_blink = blink;
+
+        let cmd = self.display_mode.as_byte();
+
+        self.write_command(cmd);
+        
+    }
+
+    /// Set which way the cursor will move when a new character is written 
+    ///
+    /// ```rust,ignore
+    /// // Move right (Default) when a new character is written 
+    /// lcd.set_cursor_mode(CursorMode::Right)
+    ///
+    /// // Move left when a new character is written 
+    /// lcd.set_cursor_mode(CursorMode::Left)
+    /// ```
+    pub fn set_cursor_mode(&mut self, mode : CursorMode){
+        self.entry_mode.cursor_mode = mode;
+
+        let cmd = self.entry_mode.as_byte();
+
+        self.write_command(cmd);
     }
 
     /// Set the cursor position
@@ -455,11 +252,7 @@ where
     pub fn set_cursor_pos(&mut self, position: u8) {
         let lower_7_bits = 0b0111_1111 & position;
 
-        self.bus
-            .write(0b1000_0000 | lower_7_bits, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(150);
+        self.write_command(0b1000_0000 | lower_7_bits);
     }
 
     /// Shift just the cursor to the left or the right
@@ -474,10 +267,7 @@ where
             Direction::Right => 0b0000_0100,
         };
 
-        self.bus.write(0b0001_0000 | bits, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(150);
+        self.write_command(0b0001_0000 | bits | bits);
     }
 
     /// Shift the entire display to the left or the right
@@ -492,10 +282,37 @@ where
             Direction::Right => 0b0000_0100,
         };
 
-        self.bus.write(0b0001_1000 | bits, false, &mut self.delay);
+        self.write_command(0b0001_1000 | bits);
+    }
+
+    /// Writes an entire string to the `HD44780`
+    ///
+    /// ```rust,ignore
+    /// lcd.write_str("Hello, world!");
+    /// ```
+    pub fn write_str(&mut self, string: &str) {
+        for c in string.chars() {
+            self.write_char(c);
+        }
+    }
+
+    /// Write a single character to the `HD44780`
+    ///
+    /// ```rust,ignore
+    /// lcd.write_char('A');
+    /// ```
+    pub fn write_char(&mut self, data: char) {
+        self.bus.write(data as u8, true, &mut self.delay);
 
         // Wait for the command to be processed
-        self.delay.delay_us(150);
+        self.delay.delay_us(100);
+    }
+
+    fn write_command(&mut self, cmd: u8){
+        self.bus.write(cmd, false, &mut self.delay);
+
+        // Wait for the command to be processed
+        self.delay.delay_us(100);
     }
 
     fn init_4bit(&mut self) {
@@ -531,8 +348,8 @@ where
         // Wait for the command to be processed
         self.delay.delay_us(100);
 
-        // Set entry mode to increment by one
-        self.bus.write(0x06, false, &mut self.delay);
+        // Set entry mode
+        self.bus.write(self.entry_mode.as_byte(), false, &mut self.delay);
 
         // Wait for the command to be processed
         self.delay.delay_us(100);
@@ -577,31 +394,8 @@ where
         // Wait for the command to be processed
         self.delay.delay_us(100);
 
-        // Set entry mode to increment by one
-        self.bus.write(0b000_0110, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-    }
-
-    /// Writes an entire string to the `HD44780`
-    ///
-    /// ```rust,ignore
-    /// lcd.write_str("Hello, world!");
-    /// ```
-    pub fn write_str(&mut self, string: &str) {
-        for c in string.chars() {
-            self.write_char(c);
-        }
-    }
-
-    /// Write a single character to the `HD44780`
-    ///
-    /// ```rust,ignore
-    /// lcd.write_char('A');
-    /// ```
-    pub fn write_char(&mut self, data: char) {
-        self.bus.write(data as u8, true, &mut self.delay);
+        // Set entry mode
+        self.bus.write(self.entry_mode.as_byte(), false, &mut self.delay);
 
         // Wait for the command to be processed
         self.delay.delay_us(100);
