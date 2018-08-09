@@ -3,6 +3,7 @@
 [![crates.io](https://img.shields.io/crates/v/hd44780-driver.svg)](https://crates.io/crates/hd44780-driver)
 [![crates.io](https://img.shields.io/crates/d/hd44780-driver.svg)](https://crates.io/crates/hd44780-driver)
 [![crates.io](https://img.shields.io/crates/l/hd44780-driver.svg)](https://crates.io/crates/hd44780-driver)
+[![travis-ci.org](https://travis-ci.org/JohnDoneth/hd44780-driver.svg?branch=master)](https://travis-ci.org/JohnDoneth/hd44780-driver)
 
 Implementation of the `embedded-hal` traits for the HD44780.
 
