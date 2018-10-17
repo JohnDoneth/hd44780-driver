@@ -1,6 +1,6 @@
 [package]
 name = "raspberrypi-hd44780-example"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["John Doneth <Doneth7@gmail.com>"]
 
 [dependencies]

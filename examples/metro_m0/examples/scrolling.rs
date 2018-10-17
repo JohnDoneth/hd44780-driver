@@ -20,7 +20,7 @@ use metro_m0::{CorePeripherals, Peripherals};
 
 extern crate hd44780_driver;
 
-use hd44780_driver::{HD44780, DisplayMode};
+use hd44780_driver::{HD44780, DisplayMode, Display, Cursor, CursorBlink};
 
 extern crate embedded_hal;
 
@@ -69,9 +69,9 @@ fn main() {
     lcd.set_autoscroll(true);
 
     lcd.set_display_mode(DisplayMode {
-        cursor_visible  : false,
-        cursor_blink    : false,
-        display_visible : true,
+        cursor_visible  : Cursor::Invisible,
+        cursor_blink    : CursorBlink::On,
+        display_visible : Display::On,
     });
 
     let string = "Hello, world! ";

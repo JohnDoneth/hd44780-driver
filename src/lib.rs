@@ -31,6 +31,22 @@ pub enum Direction {
     Right,
 }
 
+/// Used in set_display_mode to make the parameters more clear
+pub enum Display {
+    On,
+    Off,
+}
+
+pub enum Cursor {
+    Visible,
+    Invisible,
+}
+
+pub enum CursorBlink {
+    On,
+    Off,
+}
+
 impl<
         D: DelayUs<u16> + DelayMs<u8>,
         RS: OutputPin,
@@ -184,8 +200,8 @@ where
     }
 
     /// Set if the cursor should be visible
-    pub fn set_cursor_visible(&mut self, visible: bool) {
-        self.display_mode.cursor_visible = visible;
+    pub fn set_cursor_visibility(&mut self, visibility: Cursor) {
+        self.display_mode.cursor_visibility = visibility;
 
         let cmd = self.display_mode.as_byte();
 
@@ -193,8 +209,8 @@ where
     }
 
     /// Set if the characters on the display should be visible
-    pub fn set_display_visible(&mut self, visible: bool) {
-        self.display_mode.display_visible = visible;
+    pub fn set_display(&mut self,  display: Display) {
+        self.display_mode.display = display;
 
         let cmd = self.display_mode.as_byte();
 
@@ -202,7 +218,7 @@ where
     }
 
     /// Set if the cursor should blink
-    pub fn set_cursor_blink(&mut self, blink: bool) {
+    pub fn set_cursor_blink(&mut self, blink: CursorBlink) {
         self.display_mode.cursor_blink = blink;
 
         let cmd = self.display_mode.as_byte();

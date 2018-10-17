@@ -1,6 +1,6 @@
 [package]
 name = "metro_m0_hd44780_examples"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["John Doneth <doneth7@gmail.com>"]
 keywords = ["no-std", "arm", "cortex-m", "embedded-hal"]
 license = "MIT"
