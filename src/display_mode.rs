@@ -54,7 +54,7 @@ mod tests {
         assert!(dm.as_byte() & 0b0000_0010 != 0);
 
         let dm = DisplayMode {
-            cursor_visibility: Cursor::Visible,
+            cursor_visibility: Cursor::Invisible,
             ..Default::default()
         };
 
@@ -88,7 +88,7 @@ mod tests {
         assert!(dm.as_byte() & 0b0000_0100 != 0);
 
         let dm = DisplayMode {
-            display: Display::On,
+            display: Display::Off,
             ..Default::default()
         };
 
