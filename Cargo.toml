@@ -6,8 +6,8 @@ categories = ["embedded", "hardware-support", "no-std"]
 description = "A crate to use HD44780 compliant displays with embedded-hal"
 authors = ["John Doneth <doneth7@gmail.com>"]
 license = "MIT"
-repository = "https://github.com/JohnDoneth/hd44780-hal"
-documentation = "https://docs.rs/hd44780-hal"
+repository = "https://github.com/JohnDoneth/hd44780-driver"
+documentation = "https://docs.rs/hd44780-driver"
 readme = "README.md"
 
 [dependencies]
