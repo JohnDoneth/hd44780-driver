@@ -4,7 +4,7 @@ extern crate hd44780_driver;
 use linux_embedded_hal::{Delay, Pin};
 use linux_embedded_hal::sysfs_gpio::Direction;
 
-use hd44780_driver::HD44780;
+use hd44780_driver::{HD44780, DisplayMode, Cursor, CursorBlink, Display};
 
 fn main() {
 
@@ -62,7 +62,13 @@ fn main() {
     
     lcd.clear();
 
-    lcd.set_display_mode(true, true, true);
+    lcd.set_display_mode(
+        DisplayMode {
+            display: Display::On,
+            cursor_visibility: Cursor::Visible,
+            cursor_blink: CursorBlink::On,
+        }
+    );
     
     lcd.write_str("Hello, world!");
 

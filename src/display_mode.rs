@@ -1,15 +1,19 @@
+use Cursor; 
+use CursorBlink; 
+use Display;
+
 pub struct DisplayMode {
-    pub cursor_visible: bool,
-    pub cursor_blink: bool,
-    pub display_visible: bool,
+    pub cursor_visibility: Cursor,
+    pub cursor_blink: CursorBlink,
+    pub display: Display,
 }
 
 impl Default for DisplayMode {
     fn default() -> DisplayMode {
         DisplayMode {
-            cursor_visible: true,
-            cursor_blink: true,
-            display_visible: true,
+            cursor_visibility: Cursor::Visible,
+            cursor_blink: CursorBlink::On,
+            display: Display::On,
         }
     }
 }
@@ -17,21 +21,21 @@ impl Default for DisplayMode {
 impl DisplayMode {
     pub fn as_byte(&self) -> u8 {
         let cursor_blink_bits = match self.cursor_blink {
-            true => 0b0000_0001,
-            false => 0,
+            CursorBlink::On => 0b0000_0001,
+            CursorBlink::Off => 0,
         };
 
-        let cursor_visible_bits = match self.cursor_visible {
-            true => 0b0000_0010,
-            false => 0,
+        let cursor_visible_bits = match self.cursor_visibility {
+            Cursor::Visible => 0b0000_0010,
+            Cursor::Invisible => 0,
         };
 
-        let display_visible_bits = match self.display_visible {
-            true => 0b0000_0100,
-            false => 0,
+        let display_bits = match self.display {
+            Display::On => 0b0000_0100,
+            Display::Off => 0,
         };
 
-        0b0000_1000 | cursor_visible_bits | cursor_blink_bits | display_visible_bits
+        0b0000_1000 | cursor_visible_bits | cursor_blink_bits | display_bits
     }
 }
 
@@ -43,14 +47,14 @@ mod tests {
     #[test]
     fn cursor_visible() {
         let dm = DisplayMode {
-            cursor_visible: true,
+            cursor_visibility: Cursor::Visible,
             ..Default::default()
         };
 
         assert!(dm.as_byte() & 0b0000_0010 != 0);
 
         let dm = DisplayMode {
-            cursor_visible: false,
+            cursor_visibility: Cursor::Visible,
             ..Default::default()
         };
 
@@ -60,14 +64,14 @@ mod tests {
     #[test]
     fn cursor_blink() {
         let dm = DisplayMode {
-            cursor_blink: true,
+            cursor_blink: CursorBlink::On,
             ..Default::default()
         };
 
         assert!(dm.as_byte() & 0b0000_0001 != 0);
 
         let dm = DisplayMode {
-            cursor_blink: false,
+            cursor_blink: CursorBlink::Off,
             ..Default::default()
         };
 
@@ -77,18 +81,17 @@ mod tests {
     #[test]
     fn display_visible() {
         let dm = DisplayMode {
-            display_visible: true,
+            display: Display::On,
             ..Default::default()
         };
 
         assert!(dm.as_byte() & 0b0000_0100 != 0);
 
         let dm = DisplayMode {
-            display_visible: false,
+            display: Display::On,
             ..Default::default()
         };
 
         assert!(dm.as_byte() & 0b0000_0100 == 0);
     }
-
 }
