@@ -1,6 +1,6 @@
 [package]
 name = "hd44780-driver"
-version = "0.2.0"
+version = "0.2.1"
 keywords = ["no-std", "lcd", "embedded-hal-driver", "embedded-hal", "hd44780"]
 categories = ["embedded", "hardware-support", "no-std"]
 description = "A crate to use HD44780 compliant displays with embedded-hal"
