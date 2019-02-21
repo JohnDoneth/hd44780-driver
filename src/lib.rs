@@ -1,5 +1,8 @@
 #![no_std]
 
+use core::fmt::Result;
+use core::fmt::Write;
+
 extern crate embedded_hal;
 
 use embedded_hal::blocking::delay::DelayMs;
@@ -285,17 +288,6 @@ where
         self.write_command(0b0001_1000 | bits);
     }
 
-    /// Writes an entire string to the `HD44780`
-    ///
-    /// ```rust,ignore
-    /// lcd.write_str("Hello, world!");
-    /// ```
-    pub fn write_str(&mut self, string: &str) {
-        for c in string.chars() {
-            self.write_char(c);
-        }
-    }
-
     /// Write a single character to the `HD44780`
     ///
     /// ```rust,ignore
@@ -417,4 +409,17 @@ where
         self.delay.delay_ms(15u8);
         self.en.set_low();
     }*/
+}
+
+impl<D, B> Write for HD44780<D, B>
+where
+    D: DelayUs<u16> + DelayMs<u8>,
+    B: DataBus,
+{
+    fn write_str(&mut self, string: &str) -> Result {
+        for c in string.chars() {
+            self.write_char(c);
+        }
+        Ok(())
+    }
 }
