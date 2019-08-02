@@ -1,7 +1,7 @@
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 
-mod eightbit;
-mod fourbit;
+pub mod eightbit;
+pub mod fourbit;
 
 pub use self::eightbit::EightBitBus;
 pub use self::fourbit::FourBitBus;
