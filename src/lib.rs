@@ -95,7 +95,7 @@ impl<
             display_mode: DisplayMode::default(),
         };
 
-        hd.init_8bit();
+        hd.bus.init(hd.entry_mode.as_byte(), &mut hd.delay);
 
         return hd;
     }
@@ -146,7 +146,7 @@ impl<
             display_mode: DisplayMode::default(),
         };
 
-        hd.init_4bit();
+        hd.bus.init(hd.entry_mode.as_byte(), &mut hd.delay);
 
         return hd;
     }
@@ -302,94 +302,6 @@ where
 
     fn write_command(&mut self, cmd: u8) {
         self.bus.write(cmd, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-    }
-
-    fn init_4bit(&mut self) {
-        // Wait for the LCD to wakeup if it was off
-        self.delay.delay_ms(15u8);
-
-        // Initialize Lcd in 4-bit mode
-        self.bus.write(0x33, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_ms(5u8);
-
-        // Sets 4-bit operation and enables 5x7 mode for chars
-        self.bus.write(0x32, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-
-        self.bus.write(0x28, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-
-        // Clear Display
-        self.bus.write(0x0E, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-
-        // Move the cursor to beginning of first line
-        self.bus.write(0x01, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-
-        // Set entry mode
-        self.bus
-            .write(self.entry_mode.as_byte(), false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-
-        self.bus.write(0x80, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-    }
-
-    // Follow the 8-bit setup procedure as specified in the HD44780 datasheet
-    fn init_8bit(&mut self) {
-        // Wait for the LCD to wakeup if it was off
-        self.delay.delay_ms(15u8);
-
-        // Initialize Lcd in 8-bit mode
-        self.bus.write(0b0011_0000, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_ms(5u8);
-
-        // Sets 8-bit operation and enables 5x7 mode for chars
-        self.bus.write(0b0011_1000, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-
-        self.bus.write(0b0000_1110, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-
-        // Clear Display
-        self.bus.write(0b0000_0001, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-
-        // Move the cursor to beginning of first line
-        self.bus.write(0b000_0111, false, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-
-        // Set entry mode
-        self.bus
-            .write(self.entry_mode.as_byte(), false, &mut self.delay);
 
         // Wait for the command to be processed
         self.delay.delay_us(100);

@@ -131,4 +131,49 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
             self.rs.set_low();
         }
     }
+
+    fn init<D: DelayUs<u16> + DelayMs<u8>>(&mut self, entry_mode: u8, delay: &mut D) {
+        // Wait for the LCD to wakeup if it was off
+        delay.delay_ms(15u8);
+
+        // Initialize Lcd in 4-bit mode
+        self.write(0x33, false, delay);
+
+        // Wait for the command to be processed
+        delay.delay_ms(5u8);
+
+        // Sets 4-bit operation and enables 5x7 mode for chars
+        self.write(0x32, false, delay);
+
+        // Wait for the command to be processed
+        delay.delay_us(100);
+
+        self.write(0x28, false, delay);
+
+        // Wait for the command to be processed
+        delay.delay_us(100);
+
+        // Clear Display
+        self.write(0x0E, false, delay);
+
+        // Wait for the command to be processed
+        delay.delay_us(100);
+
+        // Move the cursor to beginning of first line
+        self.write(0x01, false, delay);
+
+        // Wait for the command to be processed
+        delay.delay_us(100);
+
+        // Set entry mode
+        self.write(entry_mode, false, delay);
+
+        // Wait for the command to be processed
+        delay.delay_us(100);
+
+        self.write(0x80, false, delay);
+
+        // Wait for the command to be processed
+        delay.delay_us(100);
+    }
 }
