@@ -11,7 +11,7 @@ use embedded_hal::digital::OutputPin;
 
 pub mod bus;
 
-use bus::{DataBus, EightBitBus, FourBitBus};
+pub use bus::{DataBus, EightBitBus, FourBitBus};
 
 pub mod entry_mode;
 

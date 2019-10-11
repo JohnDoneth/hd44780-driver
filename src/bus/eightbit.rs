@@ -149,7 +149,7 @@ impl<
         self.set_bus_bits(byte);
 
         self.en.set_high();
-        delay.delay_ms(2u8);
+        delay.delay_ms(1u8);
         self.en.set_low();
 
         if data {
