@@ -21,7 +21,32 @@ pub mod display_mode;
 
 pub use display_mode::DisplayMode;
 
-pub struct HD44780<D: DelayUs<u16> + DelayMs<u8>, B: DataBus> {
+pub trait HD44780 {
+    fn reset(&mut self);
+    fn set_display_mode(&mut self, display_mode: DisplayMode);
+    fn create_char(&mut self, location: u8, charmap: [u8; 8]);
+    fn clear(&mut self);
+    fn set_autoscroll(&mut self, enabled: bool);
+    fn set_cursor_visibility(&mut self, visibility: Cursor);
+    fn set_display(&mut self,  display: Display);
+    fn set_cursor_blink(&mut self, blink: CursorBlink);
+    fn set_cursor_mode(&mut self, mode: CursorMode);
+    fn set_cursor_pos(&mut self, position: u8);
+    fn shift_cursor(&mut self, dir: Direction);
+    fn shift_display(&mut self, dir: Direction);
+    fn write_char(&mut self, data: char);
+}
+
+impl Write for HD44780 {
+    fn write_str(&mut self, string: &str) -> Result {
+        for c in string.chars() {
+            self.write_char(c);
+        }
+        Ok(())
+    }
+}
+
+pub struct HD44780Driver<D: DelayUs<u16> + DelayMs<u8>, B: DataBus> {
     bus: B,
     delay: D,
     entry_mode: EntryMode,
@@ -62,7 +87,7 @@ impl<
         D5: OutputPin,
         D6: OutputPin,
         D7: OutputPin,
-    > HD44780<D, EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>>
+    > HD44780Driver<D, EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>>
 {
     /// Create an instance of a `HD44780` from 8 data pins, a register select
     /// pin, an enable pin and a struct implementing the delay trait.
@@ -87,8 +112,8 @@ impl<
         d6: D6,
         d7: D7,
         delay: D,
-    ) -> HD44780<D, EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>> {
-        let mut hd = HD44780 {
+    ) -> HD44780Driver<D, EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>> {
+        let mut hd = HD44780Driver {
             bus: EightBitBus::from_pins(rs, en, d0, d1, d2, d3, d4, d5, d6, d7),
             delay,
             entry_mode: EntryMode::default(),
@@ -109,7 +134,7 @@ impl<
         D5: OutputPin,
         D6: OutputPin,
         D7: OutputPin,
-    > HD44780<D, FourBitBus<RS, EN, D4, D5, D6, D7>>
+    > HD44780Driver<D, FourBitBus<RS, EN, D4, D5, D6, D7>>
 {
     /// Create an instance of a `HD44780` from 4 data pins, a register select
     /// pin, an enable pin and a struct implementing the delay trait.
@@ -138,8 +163,8 @@ impl<
         d6: D6,
         d7: D7,
         delay: D,
-    ) -> HD44780<D, FourBitBus<RS, EN, D4, D5, D6, D7>> {
-        let mut hd = HD44780 {
+    ) -> HD44780Driver<D, FourBitBus<RS, EN, D4, D5, D6, D7>> {
+        let mut hd = HD44780Driver {
             bus: FourBitBus::from_pins(rs, en, d4, d5, d6, d7),
             delay,
             entry_mode: EntryMode::default(),
@@ -152,7 +177,20 @@ impl<
     }
 }
 
-impl<D, B> HD44780<D, B>
+impl<D, B> HD44780Driver<D, B>
+where
+    D: DelayUs<u16> + DelayMs<u8>,
+    B: DataBus,
+{
+    fn write_command(&mut self, cmd: u8) {
+        self.bus.write(cmd, false, &mut self.delay);
+
+        // Wait for the command to be processed
+        self.delay.delay_us(100);
+    }
+}
+
+impl<D, B> HD44780 for HD44780Driver<D, B>
 where
     D: DelayUs<u16> + DelayMs<u8>,
     B: DataBus,
@@ -162,7 +200,7 @@ where
     /// ```rust,ignore
     /// lcd.reset();
     /// ```
-    pub fn reset(&mut self) {
+    fn reset(&mut self) {
         self.write_command(0b0000_0010);
     }
 
@@ -171,7 +209,7 @@ where
     ///
     /// Note: This is equivilent to calling all of the other relavent
     /// methods however this operation does it all in one go to the `HD44780`
-    pub fn set_display_mode(&mut self, display_mode: DisplayMode) {
+    fn set_display_mode(&mut self, display_mode: DisplayMode) {
         self.display_mode = display_mode;
 
         let cmd_byte = self.display_mode.as_byte();
@@ -179,12 +217,26 @@ where
         self.write_command(cmd_byte);
     }
 
+    fn create_char(&mut self, location: u8, charmap: [u8; 8]) {
+        const CMD_SETCGRAMADDR: u8 = 0x40;
+
+        if location >= 8 {
+            panic!("Invalid location {}. Valid positions are 0-7.", location);
+        }
+
+        self.write_command(CMD_SETCGRAMADDR | location << 3);
+
+        for row in charmap.iter() {
+            self.write_char(*row as char);
+        }
+    }
+
     /// Clear the entire display
     ///
     /// ```rust,ignore
     /// lcd.clear();
     /// ```
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.write_command(0b0000_0001);
     }
 
@@ -194,7 +246,7 @@ where
     /// ```rust,ignore
     /// lcd.set_autoscroll(true);
     /// ```
-    pub fn set_autoscroll(&mut self, enabled: bool) {
+    fn set_autoscroll(&mut self, enabled: bool) {
         self.entry_mode.shift_mode = enabled.into();
 
         let cmd = self.entry_mode.as_byte();
@@ -203,7 +255,7 @@ where
     }
 
     /// Set if the cursor should be visible
-    pub fn set_cursor_visibility(&mut self, visibility: Cursor) {
+    fn set_cursor_visibility(&mut self, visibility: Cursor) {
         self.display_mode.cursor_visibility = visibility;
 
         let cmd = self.display_mode.as_byte();
@@ -212,7 +264,7 @@ where
     }
 
     /// Set if the characters on the display should be visible
-    pub fn set_display(&mut self,  display: Display) {
+    fn set_display(&mut self,  display: Display) {
         self.display_mode.display = display;
 
         let cmd = self.display_mode.as_byte();
@@ -221,7 +273,7 @@ where
     }
 
     /// Set if the cursor should blink
-    pub fn set_cursor_blink(&mut self, blink: CursorBlink) {
+    fn set_cursor_blink(&mut self, blink: CursorBlink) {
         self.display_mode.cursor_blink = blink;
 
         let cmd = self.display_mode.as_byte();
@@ -238,7 +290,7 @@ where
     /// // Move left when a new character is written
     /// lcd.set_cursor_mode(CursorMode::Left)
     /// ```
-    pub fn set_cursor_mode(&mut self, mode: CursorMode) {
+    fn set_cursor_mode(&mut self, mode: CursorMode) {
         self.entry_mode.cursor_mode = mode;
 
         let cmd = self.entry_mode.as_byte();
@@ -252,7 +304,7 @@ where
     /// // Move to line 2
     /// lcd.set_cursor_pos(40)
     /// ```
-    pub fn set_cursor_pos(&mut self, position: u8) {
+    fn set_cursor_pos(&mut self, position: u8) {
         let lower_7_bits = 0b0111_1111 & position;
 
         self.write_command(0b1000_0000 | lower_7_bits);
@@ -264,7 +316,7 @@ where
     /// lcd.shift_cursor(Direction::Left);
     /// lcd.shift_cursor(Direction::Right);
     /// ```
-    pub fn shift_cursor(&mut self, dir: Direction) {
+    fn shift_cursor(&mut self, dir: Direction) {
         let bits = match dir {
             Direction::Left => 0b0000_0000,
             Direction::Right => 0b0000_0100,
@@ -279,7 +331,7 @@ where
     /// lcd.shift_display(Direction::Left);
     /// lcd.shift_display(Direction::Right);
     /// ```
-    pub fn shift_display(&mut self, dir: Direction) {
+    fn shift_display(&mut self, dir: Direction) {
         let bits = match dir {
             Direction::Left => 0b0000_0000,
             Direction::Right => 0b0000_0100,
@@ -293,15 +345,8 @@ where
     /// ```rust,ignore
     /// lcd.write_char('A');
     /// ```
-    pub fn write_char(&mut self, data: char) {
+    fn write_char(&mut self, data: char) {
         self.bus.write(data as u8, true, &mut self.delay);
-
-        // Wait for the command to be processed
-        self.delay.delay_us(100);
-    }
-
-    fn write_command(&mut self, cmd: u8) {
-        self.bus.write(cmd, false, &mut self.delay);
 
         // Wait for the command to be processed
         self.delay.delay_us(100);
@@ -321,17 +366,4 @@ where
         self.delay.delay_ms(15u8);
         self.en.set_low();
     }*/
-}
-
-impl<D, B> Write for HD44780<D, B>
-where
-    D: DelayUs<u16> + DelayMs<u8>,
-    B: DataBus,
-{
-    fn write_str(&mut self, string: &str) -> Result {
-        for c in string.chars() {
-            self.write_char(c);
-        }
-        Ok(())
-    }
 }
