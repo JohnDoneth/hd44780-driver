@@ -7,7 +7,7 @@ extern crate embedded_hal;
 
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::blocking::delay::DelayUs;
-use embedded_hal::digital::OutputPin;
+use embedded_hal::digital::v2::OutputPin;
 
 pub mod bus;
 
@@ -37,7 +37,7 @@ pub trait HD44780 {
     fn write_char(&mut self, data: char);
 }
 
-impl Write for HD44780 {
+impl Write for dyn HD44780 {
     fn write_str(&mut self, string: &str) -> Result {
         for c in string.chars() {
             self.write_char(c);
@@ -122,7 +122,7 @@ impl<
 
         hd.bus.init(hd.entry_mode.as_byte(), &mut hd.delay);
 
-        return hd;
+        hd
     }
 }
 
@@ -173,7 +173,7 @@ impl<
 
         hd.bus.init(hd.entry_mode.as_byte(), &mut hd.delay);
 
-        return hd;
+        hd
     }
 }
 
