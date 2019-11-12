@@ -3,7 +3,7 @@ extern crate hd44780_driver;
 
 use linux_embedded_hal::{Delay, Pin};
 use linux_embedded_hal::sysfs_gpio::Direction;
-
+use std::fmt::Write;
 use hd44780_driver::{HD44780, DisplayMode, Cursor, CursorBlink, Display};
 
 fn main() {
@@ -70,6 +70,6 @@ fn main() {
         }
     );
     
-    lcd.write_str("Hello, world!");
+    let _ = lcd.write_str("Hello, world!");
 
 }
