@@ -7,7 +7,7 @@ extern crate embedded_hal;
 
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::blocking::delay::DelayUs;
-use embedded_hal::digital::OutputPin;
+use embedded_hal::digital::v2::OutputPin;
 
 pub mod bus;
 

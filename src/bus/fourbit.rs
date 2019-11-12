@@ -1,5 +1,5 @@
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
-use embedded_hal::digital::OutputPin;
+use embedded_hal::digital::v2::OutputPin;
 
 use bus::DataBus;
 
@@ -47,27 +47,27 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
         let db3: bool = (0b0000_1000 & data) != 0;
 
         if db0 {
-            self.d4.set_high();
+            let _ = self.d4.set_high();
         } else {
-            self.d4.set_low();
+            let _ = self.d4.set_low();
         }
 
         if db1 {
-            self.d5.set_high();
+            let _ = self.d5.set_high();
         } else {
-            self.d5.set_low();
+            let _ = self.d5.set_low();
         }
 
         if db2 {
-            self.d6.set_high();
+            let _ = self.d6.set_high();
         } else {
-            self.d6.set_low();
+            let _ = self.d6.set_low();
         }
 
         if db3 {
-            self.d7.set_high();
+            let _ = self.d7.set_high();
         } else {
-            self.d7.set_low();
+            let _ = self.d7.set_low();
         }
     }
 
@@ -78,27 +78,27 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
         let db7: bool = (0b1000_0000 & data) != 0;
 
         if db4 {
-            self.d4.set_high();
+            let _ = self.d4.set_high();
         } else {
-            self.d4.set_low();
+            let _ = self.d4.set_low();
         }
 
         if db5 {
-            self.d5.set_high();
+            let _ = self.d5.set_high();
         } else {
-            self.d5.set_low();
+            let _ = self.d5.set_low();
         }
 
         if db6 {
-            self.d6.set_high();
+            let _ = self.d6.set_high();
         } else {
-            self.d6.set_low();
+            let _ = self.d6.set_low();
         }
 
         if db7 {
-            self.d7.set_high();
+            let _ = self.d7.set_high();
         } else {
-            self.d7.set_low();
+            let _ = self.d7.set_low();
         }
     }
 }
@@ -108,27 +108,27 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 {
     fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) {
         if data {
-            self.rs.set_high();
+            let _ = self.rs.set_high();
         } else {
-            self.rs.set_low();
+            let _ = self.rs.set_low();
         }
 
         self.write_upper_nibble(byte);
 
         // Pulse the enable pin to recieve the upper nibble
-        self.en.set_high();
+        let _ = self.en.set_high();
         delay.delay_ms(2u8);
-        self.en.set_low();
+        let _ = self.en.set_low();
 
         self.write_lower_nibble(byte);
 
         // Pulse the enable pin to recieve the lower nibble
-        self.en.set_high();
+        let _ = self.en.set_high();
         delay.delay_ms(2u8);
-        self.en.set_low();
+        let _ = self.en.set_low();
 
         if data {
-            self.rs.set_low();
+            let _ =  self.rs.set_low();
         }
     }
 }

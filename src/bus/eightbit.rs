@@ -1,5 +1,5 @@
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
-use embedded_hal::digital::OutputPin;
+use embedded_hal::digital::v2::OutputPin;
 
 use bus::DataBus;
 
@@ -77,51 +77,51 @@ impl<
         let db7: bool = (0b1000_0000 & data) != 0;
 
         if db0 {
-            self.d0.set_high();
+            let _ = self.d0.set_high();
         } else {
-            self.d0.set_low();
+            let _ = self.d0.set_low();
         }
 
         if db1 {
-            self.d1.set_high();
+            let _ = self.d1.set_high();
         } else {
-            self.d1.set_low();
+            let _ = self.d1.set_low();
         }
 
         if db2 {
-            self.d2.set_high();
+            let _ = self.d2.set_high();
         } else {
-            self.d2.set_low();
+            let _ = self.d2.set_low();
         }
 
         if db3 {
-            self.d3.set_high();
+            let _ = self.d3.set_high();
         } else {
-            self.d3.set_low();
+            let _ = self.d3.set_low();
         }
 
         if db4 {
-            self.d4.set_high();
+            let _ = self.d4.set_high();
         } else {
-            self.d4.set_low();
+            let _ = self.d4.set_low();
         }
 
         if db5 {
-            self.d5.set_high();
+            let _ = self.d5.set_high();
         } else {
-            self.d5.set_low();
+            let _ = self.d5.set_low();
         }
 
         if db6 {
-            self.d6.set_high();
+            let _ = self.d6.set_high();
         } else {
-            self.d6.set_low();
+            let _ = self.d6.set_low();
         }
 
         if db7 {
-            self.d7.set_high();
+            let _ = self.d7.set_high();
         } else {
-            self.d7.set_low();
+            let _ = self.d7.set_low();
         }
     }
 }
@@ -141,19 +141,19 @@ impl<
 {
     fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) {
         if data {
-            self.rs.set_high();
+            let _ = self.rs.set_high();
         } else {
-            self.rs.set_low();
+            let _ = self.rs.set_low();
         }
 
         self.set_bus_bits(byte);
 
-        self.en.set_high();
+        let _ = self.en.set_high();
         delay.delay_ms(2u8);
-        self.en.set_low();
+        let _ = self.en.set_low();
 
         if data {
-            self.rs.set_low();
+            let _ = self.rs.set_low();
         }
     }
 }
