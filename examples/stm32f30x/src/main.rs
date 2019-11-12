@@ -8,6 +8,8 @@ use hal::gpio::GpioExt;
 use hal::flash::FlashExt;
 use hal::rcc::RccExt;
 use hd44780_driver::{Cursor, CursorBlink, Display, DisplayMode, HD44780};
+use core::fmt::Write;
+
 
 // Connections:
 // VSS: GND
@@ -49,7 +51,7 @@ fn main() -> ! {
             cursor_blink: CursorBlink::On,
         }
     );
-    lcd.write_str("Hello, world!");
+    let _ = lcd.write_str("Hello, world!");
 
     loop {}
 }

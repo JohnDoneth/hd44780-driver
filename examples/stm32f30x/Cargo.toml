@@ -9,7 +9,7 @@ publish = false
 [dependencies]
 cortex-m = "0.5.8"
 cortex-m-rt = "0.6.5"
-embedded-hal = "0.2.2"
+embedded-hal = "0.2.3"
 panic-halt = "0.2.0"
 hd44780-driver = { path = "../.." }
 
