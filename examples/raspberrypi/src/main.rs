@@ -44,7 +44,7 @@ fn main() {
     db6.set_direction(Direction::Low).unwrap();
     db7.set_direction(Direction::Low).unwrap();
 
-    let mut lcd = HD44780::new_8bit(
+    if let Ok(mut lcd) = HD44780::new_8bit(
         rs,
         en,
         db0,
@@ -56,20 +56,22 @@ fn main() {
         db6,
         db7,
         Delay,
-    );
+    ) {
 
-    lcd.reset();
-    
-    lcd.clear();
+        let _ = lcd.reset();
 
-    lcd.set_display_mode(
-        DisplayMode {
-            display: Display::On,
-            cursor_visibility: Cursor::Visible,
-            cursor_blink: CursorBlink::On,
-        }
-    );
-    
-    let _ = lcd.write_str("Hello, world!");
+        let _ = lcd.clear();
+
+        let _ = lcd.set_display_mode(
+            DisplayMode {
+                display: Display::On,
+                cursor_visibility: Cursor::Visible,
+                cursor_blink: CursorBlink::On,
+            }
+        );
+
+        lcd.write_str("Hello, world!").unwrap();
+    }
+
 
 }

@@ -41,17 +41,18 @@ fn main() -> ! {
     let b6 = gpiod.pd6.into_push_pull_output(&mut gpiod.moder, &mut gpiod.otyper);
     let b7 = gpiod.pd7.into_push_pull_output(&mut gpiod.moder, &mut gpiod.otyper);
 
-    let mut lcd = HD44780::new_4bit(rs, en, b4, b5, b6, b7, delay);
-    lcd.reset();
-    lcd.clear();
-    lcd.set_display_mode(
-        DisplayMode {
-            display: Display::On,
-            cursor_visibility: Cursor::Visible,
-            cursor_blink: CursorBlink::On,
-        }
-    );
-    let _ = lcd.write_str("Hello, world!");
+    if let Ok(mut lcd) = HD44780::new_4bit(rs, en, b4, b5, b6, b7, delay) {
+        let _ = lcd.reset();
+        let _ = lcd.clear();
+        let _ = lcd.set_display_mode(
+            DisplayMode {
+                display: Display::On,
+                cursor_visibility: Cursor::Visible,
+                cursor_blink: CursorBlink::On,
+            }
+        );
+        lcd.write_str("Hello, world!").unwrap();
+    }
 
     loop {}
 }
