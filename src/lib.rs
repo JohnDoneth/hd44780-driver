@@ -5,13 +5,13 @@ use core::fmt::Write;
 
 extern crate embedded_hal;
 
-use embedded_hal::blocking::delay::DelayMs;
-use embedded_hal::blocking::delay::DelayUs;
+use embedded_hal::blocking::delay::{DelayMs, DelayUs};
+use embedded_hal::blocking::i2c;
 use embedded_hal::digital::OutputPin;
 
 pub mod bus;
 
-use bus::{DataBus, EightBitBus, FourBitBus};
+use bus::{DataBus, EightBitBus, FourBitBus, I2CBus};
 
 pub mod entry_mode;
 
@@ -141,6 +141,38 @@ impl<
     ) -> HD44780<D, FourBitBus<RS, EN, D4, D5, D6, D7>> {
         let mut hd = HD44780 {
             bus: FourBitBus::from_pins(rs, en, d4, d5, d6, d7),
+            delay,
+            entry_mode: EntryMode::default(),
+            display_mode: DisplayMode::default(),
+        };
+
+        hd.init_4bit();
+
+        return hd;
+    }
+}
+
+impl<
+        D: DelayUs<u16> + DelayMs<u8>,
+        I2C: i2c::Write,
+    > HD44780<D, I2CBus<I2C>>
+{
+    /// Create an instance of a `HD44780` from an i2c write peripheral, 
+    /// the `HD44780` I2C address and a struct implementing the delay trait.
+    /// - The delay instance is used to sleep between commands to
+    /// ensure the `HD44780` has enough time to process commands.
+    /// - The i2c peripheral is used to send data to the `HD44780` and to set
+    /// its register select and enable pins.
+    ///
+    /// This mode operates on an I2C bus, using an I2C to parallel port expander
+    ///
+    pub fn new_i2c(
+        i2c_bus: I2C,
+        address: u8,
+        delay: D,
+    ) -> HD44780<D, I2CBus<I2C>> {
+        let mut hd = HD44780 {
+            bus: I2CBus::new(i2c_bus, address),
             delay,
             entry_mode: EntryMode::default(),
             display_mode: DisplayMode::default(),
