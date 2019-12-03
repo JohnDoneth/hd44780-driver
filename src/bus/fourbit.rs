@@ -1,7 +1,8 @@
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::digital::v2::OutputPin;
 
-use bus::{DataBus, Error, Result};
+use bus::{DataBus};
+use error::{Result, Error};
 
 pub struct FourBitBus<
     RS: OutputPin,
@@ -40,7 +41,7 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
         }
     }
 
-    fn write_lower_nibble(&mut self, data: u8) -> Result {
+    fn write_lower_nibble(&mut self, data: u8) -> Result<()> {
         let db0: bool = (0b0000_0001 & data) != 0;
         let db1: bool = (0b0000_0010 & data) != 0;
         let db2: bool = (0b0000_0100 & data) != 0;
@@ -72,7 +73,7 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
         Ok(())
     }
 
-    fn write_upper_nibble(&mut self, data: u8) -> Result {
+    fn write_upper_nibble(&mut self, data: u8) -> Result<()> {
         let db4: bool = (0b0001_0000 & data) != 0;
         let db5: bool = (0b0010_0000 & data) != 0;
         let db6: bool = (0b0100_0000 & data) != 0;
@@ -108,7 +109,7 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, D7: OutputPin>
     DataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
 {
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result {
+    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<()> {
         if data {
             self.rs. set_high().map_err(|_| Error)?;
         } else {

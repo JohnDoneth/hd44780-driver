@@ -1,7 +1,8 @@
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::digital::v2::OutputPin;
 
-use bus::{DataBus, Error, Result};
+use bus::{DataBus};
+use error::{Result, Error};
 
 pub struct EightBitBus<
     RS: OutputPin,
@@ -66,7 +67,7 @@ impl<
         }
     }
 
-    fn set_bus_bits(&mut self, data: u8) -> Result {
+    fn set_bus_bits(&mut self, data: u8) -> Result<()> {
         let db0: bool = (0b0000_0001 & data) != 0;
         let db1: bool = (0b0000_0010 & data) != 0;
         let db2: bool = (0b0000_0100 & data) != 0;
@@ -141,7 +142,7 @@ impl<
         D7: OutputPin,
     > DataBus for EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result {
+    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<()> {
         if data {
             self.rs.set_high().map_err(|_| Error)?;
         } else {
