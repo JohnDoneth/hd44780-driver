@@ -2,6 +2,7 @@ use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::blocking::i2c::Write;
 
 use bus::DataBus;
+use error::{Error,Result};
 
 pub struct I2CBus<
     I2C: Write,
@@ -30,28 +31,29 @@ impl<I2C: Write>
 
     /// Write a nibble to the lcd
     /// The nibble should be in the upper part of the byte
-    fn write_nibble<D: DelayUs<u16> + DelayMs<u8>>(&mut self, nibble: u8, data: bool, delay: &mut D) {
+    fn write_nibble<D: DelayUs<u16> + DelayMs<u8>>(&mut self, nibble: u8, data: bool, delay: &mut D) -> Result<()> {
         let rs = match data {
             false => 0u8,
             true => REGISTER_SELECT,
         };
         let byte = nibble | rs | BACKLIGHT;
 
-        let _ = self.i2c_bus.write(self.address, &[byte, byte|ENABLE]);
+        self.i2c_bus.write(self.address, &[byte, byte|ENABLE]).map_err(|_| Error)?;
         delay.delay_ms(2u8);
-        let _ = self.i2c_bus.write(self.address, &[byte]);
+        self.i2c_bus.write(self.address, &[byte]).map_err(|_| Error)?;
+        Ok(())
     }
 }
 
 impl<I2C: Write>
     DataBus for I2CBus<I2C>
 {
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) {
+    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<()> {
 
         let upper_nibble = byte & 0xF0;
-        self.write_nibble(upper_nibble, data, delay);
+        self.write_nibble(upper_nibble, data, delay)?;
 
         let lower_nibble = (byte & 0x0F) << 4;
-        self.write_nibble(lower_nibble, data, delay);
+        self.write_nibble(lower_nibble, data, delay)
     }
 }

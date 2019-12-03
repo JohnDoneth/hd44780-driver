@@ -149,7 +149,7 @@ impl<
 
         hd.init_4bit()?;
 
-        return OK(hd);
+        return Ok(hd);
     }
 }
 
@@ -171,7 +171,7 @@ impl<
         i2c_bus: I2C,
         address: u8,
         delay: D,
-    ) -> HD44780<D, I2CBus<I2C>> {
+    ) -> Result<HD44780<D, I2CBus<I2C>>> {
         let mut hd = HD44780 {
             bus: I2CBus::new(i2c_bus, address),
             delay,

@@ -36,17 +36,18 @@ fn main() -> ! {
 
     let i2c = I2c::i2c1(dp.I2C1, (scl, sda), 400.khz(), clocks, &mut rcc.apb1);
 
-    let mut lcd = HD44780::new_i2c(i2c, I2C_ADDRESS, delay);
-    lcd.reset();
-    lcd.clear();
-    lcd.set_display_mode(
-        DisplayMode {
-            display: Display::On,
-            cursor_visibility: Cursor::Visible,
-            cursor_blink: CursorBlink::On,
-        }
-    );
-    let _ = lcd.write_str("Hello, world!");
+    if let Ok(mut lcd) = HD44780::new_i2c(i2c, I2C_ADDRESS, delay) {
+        let _ = lcd.reset();
+        let _ = lcd.clear();
+        let _ = lcd.set_display_mode(
+            DisplayMode {
+                display: Display::On,
+                cursor_visibility: Cursor::Visible,
+                cursor_blink: CursorBlink::On,
+            }
+        );
+        let _ = lcd.write_str("Hello, world!");
 
+    }
     loop {}
 }
