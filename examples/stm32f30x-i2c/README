@@ -1,0 +1,3 @@
+This example is based on the cortex-m-quickstart project avaiable at
+https://github.com/rust-embedded/cortex-m-quickstart under the MIT License or
+the Apache License, Version 2.0.
