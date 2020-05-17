@@ -1,6 +1,4 @@
-use Cursor; 
-use CursorBlink; 
-use Display;
+use crate::{Cursor, CursorBlink, Display};
 
 pub struct DisplayMode {
     pub cursor_visibility: Cursor,

@@ -1,7 +1,9 @@
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
-use embedded_hal::digital::OutputPin;
+use embedded_hal::digital::v2::OutputPin;
 
-use bus::DataBus;
+use crate::bus::DataBus;
+
+// todo: Address unwraps
 
 pub struct FourBitBus<
     RS: OutputPin,

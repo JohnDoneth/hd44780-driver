@@ -94,5 +94,4 @@ mod tests {
 
         assert!(em.as_byte() & 0b0000_0001 == 0);
     }
-
 }
