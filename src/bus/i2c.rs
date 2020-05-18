@@ -1,7 +1,7 @@
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::blocking::i2c::Write;
 
-use crate::bus::DataBus;
+use crate::{bus::DataBus, error::Result};
 
 pub struct I2CBus<I2C: Write> {
     i2c_bus: I2C,
@@ -39,11 +39,18 @@ impl<I2C: Write> I2CBus<I2C> {
 }
 
 impl<I2C: Write> DataBus for I2CBus<I2C> {
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) {
+    fn write<D: DelayUs<u16> + DelayMs<u8>>(
+        &mut self,
+        byte: u8,
+        data: bool,
+        delay: &mut D,
+    ) -> Result<()> {
         let upper_nibble = byte & 0xF0;
         self.write_nibble(upper_nibble, data, delay);
 
         let lower_nibble = (byte & 0x0F) << 4;
         self.write_nibble(lower_nibble, data, delay);
+
+        Ok(())
     }
 }
