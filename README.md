@@ -56,6 +56,7 @@ lcd.write_str("I'm on line 2!");
 
 ### Features
 - 4-bit & 8-bit modes are supported
+- Support for i2c backpacks
 
 ### Todo
 - Busy flag support (Waiting for support from [embedded-hal](https://github.com/rust-embedded/embedded-hal) to read and write from a pin)
