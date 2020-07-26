@@ -1,0 +1,33 @@
+[package]
+name = "arduino-uno"
+version = "0.1.0"
+authors = ["John Doneth <doneth7@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+avr-hal-generic = { rev = "bfc5dfe", git = "https://github.com/Rahix/avr-hal.git" }
+arduino-uno = { rev = "bfc5dfe", git = "https://github.com/Rahix/avr-hal.git" }
+panic-halt = "0.2.0"
+hd44780-driver = { path = "../.." }
+
+[dependencies.embedded-hal]
+version = "0.2.3"
+features = ["unproven"]
+
+[dev-dependencies]
+nb = "0.1.2"
+ufmt = "0.1.0"
+
+[profile.dev]
+panic = "abort"
+codegen-units = 1
+incremental = false
+lto = true
+opt-level = "s"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+debug = false
+lto = true
+opt-level = "s"

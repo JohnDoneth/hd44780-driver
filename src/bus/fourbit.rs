@@ -110,7 +110,7 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, D7: OutputPin>
     DataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
 {
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(
+    fn write<D: DelayUs<u16> + DelayMs<u16>>(
         &mut self,
         byte: u8,
         data: bool,
@@ -126,14 +126,14 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 
         // Pulse the enable pin to recieve the upper nibble
         self.en.set_high().map_err(|_| Error)?;
-        delay.delay_ms(2u8);
+        delay.delay_ms(2u16);
         self.en.set_low().map_err(|_| Error)?;
 
         self.write_lower_nibble(byte)?;
 
         // Pulse the enable pin to recieve the lower nibble
         self.en.set_high().map_err(|_| Error)?;
-        delay.delay_ms(2u8);
+        delay.delay_ms(2u16);
         self.en.set_low().map_err(|_| Error)?;
 
         if data {

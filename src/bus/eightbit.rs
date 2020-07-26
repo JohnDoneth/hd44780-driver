@@ -144,7 +144,7 @@ impl<
         D7: OutputPin,
     > DataBus for EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(
+    fn write<D: DelayUs<u16> + DelayMs<u16>>(
         &mut self,
         byte: u8,
         data: bool,
@@ -159,7 +159,7 @@ impl<
         self.set_bus_bits(byte)?;
 
         self.en.set_high().map_err(|_| Error)?;
-        delay.delay_ms(2u8);
+        delay.delay_ms(2u16);
         self.en.set_low().map_err(|_| Error)?;
 
         if data {

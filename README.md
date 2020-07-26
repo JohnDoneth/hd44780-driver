@@ -22,7 +22,7 @@ Any platform that implements the [embedded-hal](https://github.com/rust-embedded
 
 ### Getting Started
 
-This library aims to keep it simple in that to get started all you will have to do is supply the `HD44780::new` function a bunch of pins from your platform that implement the `OutputPin` trait for [embedded-hal](https://github.com/rust-embedded/embedded-hal) as well as a struct that implements the delay traits `DelayUs<u16>`  and `DelayMs<u8>`.
+This library aims to keep it simple in that to get started all you will have to do is supply the `HD44780::new` function a bunch of pins from your platform that implement the `OutputPin` trait for [embedded-hal](https://github.com/rust-embedded/embedded-hal) as well as a struct that implements the delay traits `DelayUs<u16>`  and `DelayMs<u16>`.
 
 ```rust
 // Code grabbed from the metro_m0 example

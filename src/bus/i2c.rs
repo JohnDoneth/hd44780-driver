@@ -20,7 +20,7 @@ impl<I2C: Write> I2CBus<I2C> {
 
     /// Write a nibble to the lcd
     /// The nibble should be in the upper part of the byte
-    fn write_nibble<D: DelayUs<u16> + DelayMs<u8>>(
+    fn write_nibble<D: DelayUs<u16> + DelayMs<u16>>(
         &mut self,
         nibble: u8,
         data: bool,
@@ -33,13 +33,13 @@ impl<I2C: Write> I2CBus<I2C> {
         let byte = nibble | rs | BACKLIGHT;
 
         let _ = self.i2c_bus.write(self.address, &[byte, byte | ENABLE]);
-        delay.delay_ms(2u8);
+        delay.delay_ms(2u16);
         let _ = self.i2c_bus.write(self.address, &[byte]);
     }
 }
 
 impl<I2C: Write> DataBus for I2CBus<I2C> {
-    fn write<D: DelayUs<u16> + DelayMs<u8>>(
+    fn write<D: DelayUs<u16> + DelayMs<u16>>(
         &mut self,
         byte: u8,
         data: bool,
