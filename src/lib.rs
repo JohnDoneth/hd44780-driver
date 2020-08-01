@@ -361,22 +361,20 @@ where
         Ok(())
     }
 
-    /// Write a single character to the `HD44780`
+    /// Write a single character to the `HD44780`. This `char` just gets downcast to a `u8`
+    /// internally, so make sure that whatever character you're printing fits inside that range, or
+    /// you can just use [write_byte](#method.write_byte) to have the compiler check for you.
+    /// See the documentation on that function for more details about compatibility.
     ///
     /// ```rust,ignore
-    /// lcd.write_char('A');
+    /// lcd.write_char('A', &mut delay)?; // prints 'A'
     /// ```
     pub fn write_char<D: DelayUs<u16> + DelayMs<u8>>(
         &mut self,
         data: char,
         delay: &mut D,
     ) -> Result<()> {
-        self.bus.write(data as u8, true, delay)?;
-
-        // Wait for the command to be processed
-        delay.delay_us(100);
-
-        Ok(())
+        self.write_byte(data as u8, delay)
     }
 
     fn write_command<D: DelayUs<u16> + DelayMs<u8>>(
@@ -481,24 +479,64 @@ where
         Ok(())
     }
 
+    /// Writes a string to the HD44780. Internally, this just prints the string byte-by-byte, so
+    /// make sure the characters in the string fit in a normal `u8`. See the documentation on
+    /// [write_byte](#method.write_byte) for more details on compatibility.
+    ///
+    /// ```rust,ignore
+    /// lcd.write_str("Hello, World!", &mut delay)?;
+    /// ```
     pub fn write_str<D: DelayUs<u16> + DelayMs<u8>>(
         &mut self,
         string: &str,
         delay: &mut D,
     ) -> Result<()> {
-        for c in string.chars() {
-            self.write_char(c, delay)?;
+        self.write_bytes(string.as_bytes(), delay)
+    }
+
+    /// Writes a sequence of bytes to the HD44780. See the documentation on the
+    /// [write_byte](#method.write_byte) function for more details about compatibility.
+    ///
+    /// ```rust,ignore
+    /// lcd.write_bytes(b"Hello, World!", &mut delay)?;
+    /// ```
+    pub fn write_bytes<D: DelayUs<u16> + DelayMs<u8>>(
+        &mut self,
+        string: &[u8],
+        delay: &mut D,
+    ) -> Result<()> {
+        for &b in string {
+            self.write_byte(b, delay)?;
         }
         Ok(())
     }
 
-    // Send a byte to the HD44780 by setting the data on the bus and
-    // also pulsing the enable pin
-    /*fn send_byte(&mut self, data: u8) {
-        // Pulse the enable pin
-        self.set_bus_bits(data);
-        self.pulse_enable();
-    }*/
+    /// Writes a single byte to the HD44780. These usually map to ASCII characters when printed on the
+    /// screen, but not always. While it varies depending on the ROM of the LCD, `0x20u8..=0x5b`
+    /// and `0x5d..=0x7d` should map to their standard ASCII characters. That is, all the printable
+    /// ASCII characters work, excluding `\` and `~`, which are usually displayed as `¥` and `🡢`
+    /// respectively.
+    ///
+    /// More information can be found in the Hitachi datasheets for the HD44780.
+    ///
+    /// ```rust,ignore
+    /// lcd.write_byte(b'A', &mut delay)?; // prints 'A'
+    /// lcd.write_byte(b'\\', &mut delay)?; // usually prints ¥
+    /// lcd.write_byte(b'~', &mut delay)?; // usually prints 🡢
+    /// lcd.write_byte(b'\x7f', &mut delay)?; // usually prints 🡠
+    /// ```
+    pub fn write_byte<D: DelayUs<u16> + DelayMs<u8>>(
+        &mut self,
+        data: u8,
+        delay: &mut D
+    ) -> Result<()> {
+        self.bus.write(data, true, delay)?;
+
+        // Wait for the command to be processed
+        delay.delay_us(100);
+
+        Ok(())
+    }
 
     // Pulse the enable pin telling the HD44780 that we something for it
     /*fn pulse_enable(&mut self) {
