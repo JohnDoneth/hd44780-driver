@@ -58,7 +58,7 @@ lcd.write_str("I'm on line 2!", &mut delay);
 - Support for i2c backpacks
 
 ### Todo
-- Busy flag support (Waiting for support from [embedded-hal](https://github.com/rust-embedded/embedded-hal) to read and write from a pin)
+- Busy flag support
 - Non-blocking API
 - A more user-friendly API with additional features
 - Custom characters
