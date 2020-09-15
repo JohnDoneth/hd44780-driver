@@ -12,7 +12,6 @@ default = ["no-std"]
 # A panic handler is needed.  This is a crate with the most basic one.
 # The `leonardo-panic` example shows a more elaborate version.
 embedded-hal = "0.2.4"
-nb = "1.0.0"
 numtoa = "0.2.3"
 hd44780-driver = "0.4.0"
 panic-halt = "0.2.0"
