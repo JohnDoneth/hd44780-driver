@@ -15,9 +15,7 @@ panic-halt = "0.2.0"
 ufmt = "0.1.0"
 nb = "1.0.0"
 embedded-hal = "0.2.4"
-
-[dependencies.hd44780-driver]
-git = "https://github.com/JohnDoneth/hd44780-driver"
+hd44780-driver = "0.4.0"
 
 [dependencies.arduino-uno]
 git = "https://github.com/Rahix/avr-hal"
