@@ -11,11 +11,11 @@ default = ["no-std"]
 [dependencies]
 # A panic handler is needed.  This is a crate with the most basic one.
 # The `leonardo-panic` example shows a more elaborate version.
-panic-halt = "0.2.0"
-ufmt = "0.1.0"
-nb = "1.0.0"
 embedded-hal = "0.2.4"
+nb = "1.0.0"
+numtoa = "0.2.3"
 hd44780-driver = "0.4.0"
+panic-halt = "0.2.0"
 
 [dependencies.arduino-uno]
 git = "https://github.com/Rahix/avr-hal"
