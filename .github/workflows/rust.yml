@@ -14,6 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: thumbv7em-none-eabi
+          components: rust-src
+          override: true
     - name: Build
       run: cargo build --verbose --features async
     - name: Run tests
