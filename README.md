@@ -54,13 +54,51 @@ lcd.set_cursor_pos(40, &mut delay);
 lcd.write_str("I'm on line 2!", &mut delay);
 ```
 
+# Async API
+
+The async API is similar to the sync API. The the major differences are that:
+- The async API requires the `async` feature to use.
+- The async API requires the nightly compiler because of use of unstable features.
+- The async API uses `embassy-traits` rather than `embedded-hal` traits.
+
+Embassy provides some implementations of these traits for some MCUs, and provides
+an executor that can execute futures. However, projects implementing `embassy-traits`,
+including this project, can run on any executor with any driver, provided such
+executor and driver also implement `embassy-traits`.
+
+Currently the I2C backpack is not available for async because an I2C trait is not
+available in embassy traits. Implementation of the I2C backpack should be fairly
+straightforward once the I2C trait becomes available.
+
+```rust
+use hd44780_driver::masync::HD44780;
+
+let mut delay = embassy::time::Delay::new();
+pin_mut!(delay);
+
+let mut display = HD44780::new_4bit(
+    rs,
+    en,
+    d4,
+    d5,
+    d6,
+    d7,
+    delay.as_mut(),
+)
+.await
+.unwrap();
+
+display.clear(delay.as_mut()).await;
+display.write_str(msg, delay.as_mut()).await;
+```
+
 ### Features
 - 4-bit & 8-bit modes are supported
 - Support for i2c backpacks
+- Non-blocking API
 
 ### Todo
 - Busy flag support
-- Non-blocking API
 - A more user-friendly API with additional features
 - Custom characters
 

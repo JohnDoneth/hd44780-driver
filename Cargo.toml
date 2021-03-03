@@ -11,5 +11,9 @@ repository = "https://github.com/JohnDoneth/hd44780-driver"
 documentation = "https://docs.rs/hd44780-driver"
 readme = "README.md"
 
+[features]
+async = ["embassy-traits"]
+
 [dependencies]
 embedded-hal = "0.2.3"
+embassy-traits = { version = "0.0.0", optional = true }
