@@ -16,4 +16,4 @@ async = ["embassy-traits"]
 
 [dependencies]
 embedded-hal = "0.2.3"
-embassy-traits = { version = "*", git = "https://github.com/akiles/embassy.git", optional = true }
+embassy-traits = { version = "0.0.0", optional = true }

@@ -1,6 +1,6 @@
 #![no_std]
-#![feature(generic_associated_types)]
-#![feature(type_alias_impl_trait)]
+#![cfg_attr(feature = "async", feature(generic_associated_types))]
+#![cfg_attr(feature = "async", feature(type_alias_impl_trait))]
 
 //use core::fmt::Result;
 //use core::fmt::Write;
