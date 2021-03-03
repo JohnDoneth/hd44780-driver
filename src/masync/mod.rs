@@ -108,7 +108,7 @@ impl<
     /// broken up into it's upper and lower nibbles (4 bits) before
     /// being sent over the data bus
     ///
-    pub async fn new_8bit<'a, D: Delay>(
+    pub async fn new_4bit<'a, D: Delay>(
         rs: RS,
         en: EN,
         d4: D4,

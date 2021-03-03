@@ -23,6 +23,7 @@ pub mod display_mode;
 
 pub use display_mode::DisplayMode;
 
+/// Implementation of async functionality
 #[cfg(feature = "async")]
 pub mod masync;
 
