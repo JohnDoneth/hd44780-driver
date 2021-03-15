@@ -54,7 +54,7 @@ lcd.set_cursor_pos(40, &mut delay);
 lcd.write_str("I'm on line 2!", &mut delay);
 ```
 
-# Async API
+### Async API
 
 The async API is similar to the sync API. The the major differences are that:
 - The async API requires the `async` feature to use.
@@ -65,10 +65,6 @@ Embassy provides some implementations of these traits for some MCUs, and provide
 an executor that can execute futures. However, projects implementing `embassy-traits`,
 including this project, can run on any executor with any driver, provided such
 executor and driver also implement `embassy-traits`.
-
-Currently the I2C backpack is not available for async because an I2C trait is not
-available in embassy traits. Implementation of the I2C backpack should be fairly
-straightforward once the I2C trait becomes available.
 
 ```rust
 use hd44780_driver::masync::HD44780;
