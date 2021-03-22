@@ -4,10 +4,10 @@ use embassy_traits::delay::Delay;
 use embassy_traits::i2c::I2c;
 
 use crate::error::Result;
-use crate::masync::bus::DataBus;
+use crate::non_blocking::bus::DataBus;
 
 pub struct I2CBus<I2C: I2c + 'static> {
-    i2c_bus:  Pin<&'static mut I2C>,
+    i2c_bus: Pin<&'static mut I2C>,
     address: u8,
 }
 
@@ -35,7 +35,11 @@ impl<I2C: I2c> I2CBus<I2C> {
         };
         let byte = nibble | rs | BACKLIGHT;
 
-        let _ = self.i2c_bus.as_mut().write(self.address, &[byte, byte | ENABLE]).await;
+        let _ = self
+            .i2c_bus
+            .as_mut()
+            .write(self.address, &[byte, byte | ENABLE])
+            .await;
         delay.delay_ms(2u8 as u64).await;
         let _ = self.i2c_bus.as_mut().write(self.address, &[byte]).await;
     }
@@ -53,10 +57,10 @@ impl<I2C: I2c + 'static> DataBus for I2CBus<I2C> {
         async move {
             let upper_nibble = byte & 0xF0;
             self.write_nibble(upper_nibble, data, delay.as_mut()).await;
-    
+
             let lower_nibble = (byte & 0x0F) << 4;
             self.write_nibble(lower_nibble, data, delay.as_mut()).await;
-    
+
             Ok(())
         }
     }

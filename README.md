@@ -67,7 +67,7 @@ including this project, can run on any executor with any driver, provided such
 executor and driver also implement `embassy-traits`.
 
 ```rust
-use hd44780_driver::masync::HD44780;
+use hd44780_driver::non_blocking::HD44780;
 
 let mut delay = embassy::time::Delay::new();
 pin_mut!(delay);
