@@ -1,5 +1,4 @@
 use core::future::Future;
-use core::pin::Pin;
 use embassy_traits::delay::Delay;
 
 mod eightbit;
@@ -19,7 +18,7 @@ pub trait DataBus {
         &'a mut self,
         byte: u8,
         data: bool,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Self::WriteFuture<'a, D>;
 
     // TODO

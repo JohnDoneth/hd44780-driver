@@ -1,8 +1,6 @@
 //use core::fmt::Result;
 //use core::fmt::Write;
 
-use core::pin::Pin;
-
 use embassy_traits::delay::Delay;
 use embedded_hal::digital::v2::OutputPin;
 
@@ -66,7 +64,7 @@ impl<
         d5: D5,
         d6: D6,
         d7: D7,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<HD44780<EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>>> {
         let mut hd = HD44780 {
             bus: EightBitBus::from_pins(rs, en, d0, d1, d2, d3, d4, d5, d6, d7),
@@ -115,7 +113,7 @@ impl<
         d5: D5,
         d6: D6,
         d7: D7,
-        mut delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>> {
         let mut hd = HD44780 {
             bus: FourBitBus::from_pins(rs, en, d4, d5, d6, d7),
@@ -138,7 +136,7 @@ where
     /// ```rust,ignore
     /// lcd.reset();
     /// ```
-    pub async fn reset<'a, D: Delay>(&mut self, delay: Pin<&'a mut D>) -> Result<()> {
+    pub async fn reset<'a, D: Delay>(&mut self, delay: &'a mut D) -> Result<()> {
         self.write_command(0b0000_0010, delay).await?;
 
         Ok(())
@@ -152,7 +150,7 @@ where
     pub async fn set_display_mode<'a, D: Delay>(
         &mut self,
         display_mode: DisplayMode,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         self.display_mode = display_mode;
 
@@ -168,7 +166,7 @@ where
     /// ```rust,ignore
     /// lcd.clear();
     /// ```
-    pub async fn clear<'a, D: Delay>(&mut self, delay: Pin<&'a mut D>) -> Result<()> {
+    pub async fn clear<'a, D: Delay>(&mut self, delay: &'a mut D) -> Result<()> {
         self.write_command(0b0000_0001, delay).await?;
 
         Ok(())
@@ -183,7 +181,7 @@ where
     pub async fn set_autoscroll<'a, D: Delay>(
         &mut self,
         enabled: bool,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         self.entry_mode.shift_mode = enabled.into();
 
@@ -198,7 +196,7 @@ where
     pub async fn set_cursor_visibility<'a, D: Delay>(
         &mut self,
         visibility: Cursor,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         self.display_mode.cursor_visibility = visibility;
 
@@ -213,7 +211,7 @@ where
     pub async fn set_display<'a, D: Delay>(
         &mut self,
         display: Display,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         self.display_mode.display = display;
 
@@ -228,7 +226,7 @@ where
     pub async fn set_cursor_blink<'a, D: Delay>(
         &mut self,
         blink: CursorBlink,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         self.display_mode.cursor_blink = blink;
 
@@ -251,7 +249,7 @@ where
     pub async fn set_cursor_mode<'a, D: Delay>(
         &mut self,
         mode: CursorMode,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         self.entry_mode.cursor_mode = mode;
 
@@ -271,7 +269,7 @@ where
     pub async fn set_cursor_pos<'a, D: Delay>(
         &mut self,
         position: u8,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         let lower_7_bits = 0b0111_1111 & position;
 
@@ -290,7 +288,7 @@ where
     pub async fn shift_cursor<'a, D: Delay>(
         &mut self,
         dir: Direction,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         let bits = match dir {
             Direction::Left => 0b0000_0000,
@@ -311,7 +309,7 @@ where
     pub async fn shift_display<'a, D: Delay>(
         &mut self,
         dir: Direction,
-        delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         let bits = match dir {
             Direction::Left => 0b0000_0000,
@@ -329,114 +327,106 @@ where
     /// See the documentation on that function for more details about compatibility.
     ///
     /// ```rust,ignore
-    /// lcd.write_char('A', Pin<&'a mut D>elay)?; // prints 'A'
+    /// lcd.write_char('A', &'a mut Delay)?; // prints 'A'
     /// ```
-    pub async fn write_char<'a, D: Delay>(
-        &mut self,
-        data: char,
-        delay: Pin<&'a mut D>,
-    ) -> Result<()> {
+    pub async fn write_char<'a, D: Delay>(&mut self, data: char, delay: &'a mut D) -> Result<()> {
         self.write_byte(data as u8, delay).await
     }
 
-    async fn write_command<'a, D: Delay>(
-        &mut self,
-        cmd: u8,
-        mut delay: Pin<&'a mut D>,
-    ) -> Result<()> {
-        self.bus.write(cmd, false, delay.as_mut()).await?;
+    async fn write_command<'a, D: Delay>(&mut self, cmd: u8, delay: &'a mut D) -> Result<()> {
+        self.bus.write(cmd, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
         Ok(())
     }
 
-    async fn init_4bit<'a, D: Delay>(&mut self, mut delay: Pin<&'a mut D>) -> Result<()> {
+    async fn init_4bit<'a, D: Delay>(&mut self, delay: &'a mut D) -> Result<()> {
         // Wait for the LCD to wakeup if it was off
-        delay.as_mut().delay_ms(15u8 as u64).await;
+        delay.delay_ms(15u8 as u64).await;
 
         // Initialize Lcd in 4-bit mode
-        self.bus.write(0x33, false, delay.as_mut()).await?;
+        self.bus.write(0x33, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_ms(5u8 as u64).await;
+        delay.delay_ms(5u8 as u64).await;
 
         // Sets 4-bit operation and enables 5x7 mode for chars
-        self.bus.write(0x32, false, delay.as_mut()).await?;
+        self.bus.write(0x32, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
-        self.bus.write(0x28, false, delay.as_mut()).await?;
+        self.bus.write(0x28, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
         // Clear Display
-        self.bus.write(0x0E, false, delay.as_mut()).await?;
+        self.bus.write(0x0E, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
         // Move the cursor to beginning of first line
-        self.bus.write(0x01, false, delay.as_mut()).await?;
+        self.bus.write(0x01, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
         // Set entry mode
         self.bus
-            .write(self.entry_mode.as_byte(), false, delay.as_mut())
+            .write(self.entry_mode.as_byte(), false, delay)
             .await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
-        self.bus.write(0x80, false, delay.as_mut()).await?;
+        self.bus.write(0x80, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
         Ok(())
     }
 
     // Follow the 8-bit setup procedure as specified in the HD44780 datasheet
-    async fn init_8bit<'a, D: Delay>(&mut self, mut delay: Pin<&'a mut D>) -> Result<()> {
+    async fn init_8bit<'a, D: Delay>(&mut self, delay: &'a mut D) -> Result<()> {
         // Wait for the LCD to wakeup if it was off
-        delay.as_mut().delay_ms(15u8 as u64).await;
+        delay.delay_ms(15u8 as u64).await;
 
         // Initialize Lcd in 8-bit mode
-        self.bus.write(0b0011_0000, false, delay.as_mut()).await?;
+        self.bus.write(0b0011_0000, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_ms(5u8 as u64).await;
+        delay.delay_ms(5u8 as u64).await;
 
         // Sets 8-bit operation and enables 5x7 mode for chars
-        self.bus.write(0b0011_1000, false, delay.as_mut()).await?;
+        self.bus.write(0b0011_1000, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
-        self.bus.write(0b0000_1110, false, delay.as_mut()).await?;
+        self.bus.write(0b0000_1110, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
         // Clear Display
-        self.bus.write(0b0000_0001, false, delay.as_mut()).await?;
+        self.bus.write(0b0000_0001, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
         // Move the cursor to beginning of first line
-        self.bus.write(0b000_0111, false, delay.as_mut()).await?;
+        self.bus.write(0b000_0111, false, delay).await?;
 
         // Wait for the command to be processed
-        delay.as_mut().delay_us(100 as u64).await;
+        delay.delay_us(100 as u64).await;
 
         // Set entry mode
         self.bus
-            .write(self.entry_mode.as_byte(), false, delay.as_mut())
+            .write(self.entry_mode.as_byte(), false, delay)
             .await?;
 
         // Wait for the command to be processed
@@ -450,13 +440,9 @@ where
     /// [write_byte](#method.write_byte) for more details on compatibility.
     ///
     /// ```rust,ignore
-    /// lcd.write_str("Hello, World!", Pin<&'a mut D>elay)?;
+    /// lcd.write_str("Hello, World!", &'a mut Delay)?;
     /// ```
-    pub async fn write_str<'a, D: Delay>(
-        &mut self,
-        string: &str,
-        delay: Pin<&'a mut D>,
-    ) -> Result<()> {
+    pub async fn write_str<'a, D: Delay>(&mut self, string: &str, delay: &'a mut D) -> Result<()> {
         self.write_bytes(string.as_bytes(), delay).await
     }
 
@@ -464,15 +450,15 @@ where
     /// [write_byte](#method.write_byte) function for more details about compatibility.
     ///
     /// ```rust,ignore
-    /// lcd.write_bytes(b"Hello, World!", Pin<&'a mut D>elay)?;
+    /// lcd.write_bytes(b"Hello, World!", &'a mut Delay)?;
     /// ```
     pub async fn write_bytes<'a, D: Delay>(
         &mut self,
         string: &[u8],
-        mut delay: Pin<&'a mut D>,
+        delay: &'a mut D,
     ) -> Result<()> {
         for &b in string {
-            self.write_byte(b, delay.as_mut()).await?;
+            self.write_byte(b, delay).await?;
         }
         Ok(())
     }
@@ -486,17 +472,13 @@ where
     /// More information can be found in the Hitachi datasheets for the HD44780.
     ///
     /// ```rust,ignore
-    /// lcd.write_byte(b'A', Pin<&'a mut D>elay)?; // prints 'A'
-    /// lcd.write_byte(b'\\', Pin<&'a mut D>elay)?; // usually prints ¥
-    /// lcd.write_byte(b'~', Pin<&'a mut D>elay)?; // usually prints 🡢
-    /// lcd.write_byte(b'\x7f', Pin<&'a mut D>elay)?; // usually prints 🡠
+    /// lcd.write_byte(b'A', &'a mut Delay)?; // prints 'A'
+    /// lcd.write_byte(b'\\', &'a mut Delay)?; // usually prints ¥
+    /// lcd.write_byte(b'~', &'a mut Delay)?; // usually prints 🡢
+    /// lcd.write_byte(b'\x7f', &'a mut Delay)?; // usually prints 🡠
     /// ```
-    pub async fn write_byte<'a, D: Delay>(
-        &mut self,
-        data: u8,
-        mut delay: Pin<&'a mut D>,
-    ) -> Result<()> {
-        self.bus.write(data, true, delay.as_mut()).await?;
+    pub async fn write_byte<'a, D: Delay>(&mut self, data: u8, delay: &'a mut D) -> Result<()> {
+        self.bus.write(data, true, delay).await?;
 
         // Wait for the command to be processed
         delay.delay_us(100 as u64).await;
