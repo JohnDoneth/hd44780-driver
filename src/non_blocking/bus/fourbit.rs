@@ -1,5 +1,4 @@
 use core::future::Future;
-use core::pin::Pin;
 use embassy_traits::delay::Delay;
 use embedded_hal::digital::v2::OutputPin;
 
@@ -124,7 +123,7 @@ impl<
         &'a mut self,
         byte: u8,
         data: bool,
-        mut delay: Pin<&'a mut D>,
+        mut delay: &'a mut D,
     ) -> Self::WriteFuture<'a, D> {
         async move {
             if data {
@@ -135,12 +134,12 @@ impl<
             self.write_upper_nibble(byte)?;
             // Pulse the enable pin to recieve the upper nibble
             self.en.set_high().map_err(|_| Error)?;
-            delay.as_mut().delay_ms(2u8 as u64).await;
+            delay.delay_ms(2u8 as u64).await;
             self.en.set_low().map_err(|_| Error)?;
             self.write_lower_nibble(byte)?;
             // Pulse the enable pin to recieve the lower nibble
             self.en.set_high().map_err(|_| Error)?;
-            delay.as_mut().delay_ms(2u8 as u64).await;
+            delay.delay_ms(2u8 as u64).await;
             self.en.set_low().map_err(|_| Error)?;
             if data {
                 self.rs.set_low().map_err(|_| Error)?;
