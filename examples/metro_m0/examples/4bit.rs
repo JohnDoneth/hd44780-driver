@@ -40,7 +40,7 @@ fn main() {
     let delay = Delay::new(core.SYST, &mut clocks);
 
     let mut lcd = HD44780::new_4bit(
-    
+
         pins.d4.into_open_drain_output(&mut pins.port), // Register Select pin
         pins.d3.into_open_drain_output(&mut pins.port), // Enable pin
 
@@ -53,10 +53,10 @@ fn main() {
     );
 
     // Unshift display and set cursor to 0
-    lcd.reset(); 
-    
+    lcd.reset();
+
     // Clear existing characters
-    lcd.clear(); 
+    lcd.clear();
 
     // Display the following string
     lcd.write_str("Hello, world!");
@@ -66,6 +66,6 @@ fn main() {
 
     // Display the following string on the second line
     lcd.write_str("I'm on line 2!");
- 
+
     loop { }
 }
