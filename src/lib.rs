@@ -3,9 +3,6 @@
 #![cfg_attr(feature = "async", feature(type_alias_impl_trait))]
 #![cfg_attr(feature = "async", feature(min_type_alias_impl_trait))]
 
-//use core::fmt::Result;
-//use core::fmt::Write;
-
 use display_size::DisplaySize;
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::blocking::i2c;
@@ -105,7 +102,7 @@ impl<
 
 		hd.init_8bit(delay)?;
 
-		return Ok(hd);
+		Ok(hd)
 	}
 }
 
@@ -171,7 +168,7 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 
 		hd.init_4bit(delay)?;
 
-		return Ok(hd);
+		Ok(hd)
 	}
 }
 
@@ -199,7 +196,7 @@ impl<I2C: i2c::Write> HD44780<I2CBus<I2C>> {
 
 		hd.init_4bit(delay)?;
 
-		return Ok(hd);
+		Ok(hd)
 	}
 }
 
