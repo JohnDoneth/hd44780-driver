@@ -15,6 +15,7 @@ env:
 jobs:
   quick_check:
     strategy:
+      fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
         feature: ["", "async"]
