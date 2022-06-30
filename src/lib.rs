@@ -80,6 +80,8 @@ impl<
 	/// - The enable pin is used to tell the `HD44780` that there
 	/// is data on the 8 data pins and that it should read them in.
 	///
+	#[allow(clippy::too_many_arguments)]
+	#[allow(clippy::type_complexity)]
 	pub fn new_8bit<D: DelayUs<u16> + DelayMs<u8>>(
 		rs: RS,
 		en: EN,
@@ -150,6 +152,7 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 	/// broken up into it's upper and lower nibbles (4 bits) before
 	/// being sent over the data bus
 	///
+	#[allow(clippy::type_complexity)]
 	pub fn new_4bit<D: DelayUs<u16> + DelayMs<u8>>(
 		rs: RS,
 		en: EN,
