@@ -1,0 +1,5 @@
+[toolchain]
+channel = "nightly"
+profile = "default"
+components = ["clippy", "cargo", "rustc", "fmt"]
+targets = ["thumbv7em-none-eabi"]
