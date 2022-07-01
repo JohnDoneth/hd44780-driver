@@ -339,11 +339,7 @@ where
 	/// // Move to the start of line 3
 	/// lcd.set_cursor_pos_xy(0,2)
 	/// ```
-	pub fn set_cursor_xy<D: DelayUs<u16> + DelayMs<u8>>(
-		&mut self,
-		position: (u8, u8),
-		delay: &mut D,
-	) -> Result<()> {
+	pub fn set_cursor_xy<D: DelayUs<u16> + DelayMs<u8>>(&mut self, position: (u8, u8), delay: &mut D) -> Result<()> {
 		let size = self.display_size.get();
 		let pos = get_position(position, size)?;
 

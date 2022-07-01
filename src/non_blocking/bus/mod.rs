@@ -12,15 +12,10 @@ pub use self::i2c::I2CBus;
 use crate::error::Result;
 
 pub trait DataBus {
-    type WriteFuture<'a, D: 'a>: Future<Output = Result<()>>;
+	type WriteFuture<'a, D: 'a>: Future<Output = Result<()>>;
 
-    fn write<'a, D: Delay + 'a>(
-        &'a mut self,
-        byte: u8,
-        data: bool,
-        delay: &'a mut D,
-    ) -> Self::WriteFuture<'a, D>;
+	fn write<'a, D: Delay + 'a>(&'a mut self, byte: u8, data: bool, delay: &'a mut D) -> Self::WriteFuture<'a, D>;
 
-    // TODO
-    // fn read(...)
+	// TODO
+	// fn read(...)
 }
