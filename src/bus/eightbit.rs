@@ -43,6 +43,7 @@ impl<
 		D7: OutputPin,
 	> EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
+	#[allow(clippy::too_many_arguments)]
 	pub fn from_pins(
 		rs: RS,
 		en: EN,
