@@ -1,6 +1,6 @@
 use core::future::Future;
-use embassy_traits::delay::Delay;
 use embedded_hal::digital::v2::OutputPin;
+use embedded_hal_async::delay::DelayUs;
 
 use crate::error::{Error, Result};
 use crate::non_blocking::bus::DataBus;
@@ -96,9 +96,9 @@ impl<
 		D7: OutputPin + 'static,
 	> DataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
 {
-	type WriteFuture<'a, D: 'a> = impl Future<Output = Result<()>> + 'a;
+	type WriteFuture<'a, D: 'a + DelayUs> = impl Future<Output = Result<()>> + 'a;
 
-	fn write<'a, D: Delay + 'a>(&'a mut self, byte: u8, data: bool, mut delay: &'a mut D) -> Self::WriteFuture<'a, D> {
+	fn write<'a, D: DelayUs + 'a>(&'a mut self, byte: u8, data: bool, delay: &'a mut D) -> Self::WriteFuture<'a, D> {
 		async move {
 			if data {
 				self.rs.set_high().map_err(|_| Error)?;
@@ -108,12 +108,12 @@ impl<
 			self.write_upper_nibble(byte)?;
 			// Pulse the enable pin to recieve the upper nibble
 			self.en.set_high().map_err(|_| Error)?;
-			delay.delay_ms(2u8 as u64).await;
+			delay.delay_ms(2).await;
 			self.en.set_low().map_err(|_| Error)?;
 			self.write_lower_nibble(byte)?;
 			// Pulse the enable pin to recieve the lower nibble
 			self.en.set_high().map_err(|_| Error)?;
-			delay.delay_ms(2u8 as u64).await;
+			delay.delay_ms(2).await;
 			self.en.set_low().map_err(|_| Error)?;
 			if data {
 				self.rs.set_low().map_err(|_| Error)?;

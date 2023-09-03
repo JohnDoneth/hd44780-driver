@@ -1,7 +1,6 @@
 use core::future::Future;
-use core::pin::Pin;
-use embassy_traits::delay::Delay;
 use embedded_hal::digital::v2::OutputPin;
+use embedded_hal_async::delay::DelayUs;
 
 use crate::{
 	error::{Error, Result},
@@ -135,9 +134,9 @@ impl<
 		D7: OutputPin + 'static,
 	> DataBus for EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
-	type WriteFuture<'a, D: 'a> = impl Future<Output = Result<()>> + 'a;
+	type WriteFuture<'a, D: 'a + DelayUs> = impl Future<Output = Result<()>> + 'a;
 
-	fn write<'a, D: Delay + 'a>(&'a mut self, byte: u8, data: bool, delay: &'a mut D) -> Self::WriteFuture<'a, D> {
+	fn write<'a, D: DelayUs + 'a>(&'a mut self, byte: u8, data: bool, delay: &'a mut D) -> Self::WriteFuture<'a, D> {
 		async move {
 			if data {
 				self.rs.set_high().map_err(|_| Error)?;
@@ -146,7 +145,7 @@ impl<
 			}
 			self.set_bus_bits(byte)?;
 			self.en.set_high().map_err(|_| Error)?;
-			delay.delay_ms(2u8 as u64).await;
+			delay.delay_ms(2).await;
 			self.en.set_low().map_err(|_| Error)?;
 			if data {
 				self.rs.set_low().map_err(|_| Error)?;
