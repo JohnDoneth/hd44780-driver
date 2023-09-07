@@ -1,20 +1,16 @@
 /// Determines if the cursor should be incremented or decremented on write
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub enum CursorMode {
+	#[default]
 	Increment,
 	Decrement,
 }
 
-impl Default for CursorMode {
-	fn default() -> CursorMode {
-		CursorMode::Increment
-	}
-}
-
 /// Determines if the screen should be shifted on write
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub enum ShiftMode {
 	Enabled,
+	#[default]
 	Disabled,
 }
 
@@ -25,12 +21,6 @@ impl From<bool> for ShiftMode {
 		} else {
 			ShiftMode::Disabled
 		}
-	}
-}
-
-impl Default for ShiftMode {
-	fn default() -> ShiftMode {
-		ShiftMode::Disabled
 	}
 }
 
