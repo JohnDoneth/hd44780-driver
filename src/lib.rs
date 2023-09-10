@@ -1,7 +1,6 @@
 #![no_std]
-#![cfg_attr(feature = "async", feature(generic_associated_types))]
 #![cfg_attr(feature = "async", feature(type_alias_impl_trait))]
-#![cfg_attr(feature = "async", feature(min_type_alias_impl_trait))]
+#![cfg_attr(feature = "async", feature(impl_trait_in_assoc_type))]
 
 use display_size::DisplaySize;
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};

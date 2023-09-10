@@ -39,10 +39,10 @@ let mut lcd = HD44780::new_4bit(
 );
 
 // Unshift display and set cursor to 0
-lcd.reset(&mut delay); 
+lcd.reset(&mut delay);
 
 // Clear existing characters
-lcd.clear(&mut delay); 
+lcd.clear(&mut delay);
 
 // Display the following string
 lcd.write_str("Hello, world!", &mut delay);
@@ -59,12 +59,12 @@ lcd.write_str("I'm on line 2!", &mut delay);
 The async API is similar to the sync API. The the major differences are that:
 - The async API requires the `async` feature to use.
 - The async API requires the nightly compiler because of use of unstable features.
-- The async API uses `embassy-traits` rather than `embedded-hal` traits.
+- The async API uses `embedded-hal-async` rather than `embedded-hal` traits.
 
 Embassy provides some implementations of these traits for some MCUs, and provides
-an executor that can execute futures. However, projects implementing `embassy-traits`,
+an executor that can execute futures. However, projects implementing `embedded-hal-async` traits,
 including this project, can run on any executor with any driver, provided such
-executor and driver also implement `embassy-traits`.
+executor and driver also implement `embedded-async-traits`.
 
 ```rust
 use hd44780_driver::non_blocking::HD44780;
