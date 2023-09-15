@@ -3,9 +3,10 @@
 
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal_async::delay::DelayUs;
+use embedded_hal_async::i2c::I2c;
 
 pub mod bus;
-use bus::{DataBus, EightBitBus, FourBitBus};
+use bus::{DataBus, EightBitBus, FourBitBus, I2CBus};
 
 pub use crate::error;
 use error::Result;
@@ -117,6 +118,34 @@ impl<
 	) -> Result<HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>> {
 		let mut hd = HD44780 {
 			bus: FourBitBus::from_pins(rs, en, d4, d5, d6, d7),
+			entry_mode: EntryMode::default(),
+			display_mode: DisplayMode::default(),
+		};
+
+		hd.init_4bit(delay).await?;
+
+		return Ok(hd);
+	}
+}
+
+impl<I2C: I2c + 'static> HD44780<I2CBus<I2C>> {
+	/// Create an instance of a `HD44780` from an I2C bus and a struct implementing the delay trait.
+	/// - The delay instance is used to sleep between commands to
+	/// ensure the `HD44780` has enough time to process commands.
+	/// - The I2C bus is used to send and receive with
+	///  the `HD44780`.
+	///
+	/// This mode operates differently than 8 bit  and 4 bit modes by using
+	/// an I2C expander, which is nice on devices with less I/O although
+	/// the I/O takes a 'bit' longer, because of transmission delays
+	///
+	/// Instead of commands being sent byte by byte each command is
+	/// broken up into it's upper and lower nibbles (4 bits) before
+	/// being sent over the data bus
+	///
+	pub async fn new_i2c<'a, D: DelayUs>(i2c: I2C, address: u8, delay: &'a mut D) -> Result<HD44780<I2CBus<I2C>>> {
+		let mut hd = HD44780 {
+			bus: I2CBus::new(i2c, address),
 			entry_mode: EntryMode::default(),
 			display_mode: DisplayMode::default(),
 		};
