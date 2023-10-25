@@ -3,6 +3,21 @@ use embedded_hal::blocking::i2c::Write;
 
 use crate::{bus::DataBus, error::Result};
 
+/// This module supports I2C backpacks with a PCF8574 IC.
+/// Connections as follows:
+///
+/// <table>
+/// <tr><th>PCF8574 pin</th><th>name</th><th>LCD pin</th></tr>
+/// <tr><td>P0</td><td>RS</td><td>4</td></tr>
+/// <tr><td>P1</td><td>RW</td><td>5</td></tr>
+/// <tr><td>P2</td><td>E</td><td>6</td></tr>
+/// <tr><td>P3</td><td>Backlight</td><td></td></tr>
+/// <tr><td>P4</td><td>DB4</td><td>11</td></tr>
+/// <tr><td>P5</td><td>DB5</td><td>12</td></tr>
+/// <tr><td>P6</td><td>DB6</td><td>13</td></tr>
+/// <tr><td>P7</td><td>DB7</td><td>14</td></tr>
+/// </table>
+
 pub struct I2CBus<I2C: Write> {
 	i2c_bus: I2C,
 	address: u8,

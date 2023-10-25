@@ -8,7 +8,7 @@ use embedded_hal::blocking::i2c;
 use embedded_hal::digital::v2::OutputPin;
 
 pub mod bus;
-use bus::{DataBus, EightBitBus, FourBitBus, I2CBus};
+use bus::{DataBus, EightBitBus, FourBitBus, I2CBus, I2CMCP23008Bus};
 
 pub mod error;
 use error::Result;
@@ -176,13 +176,15 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 
 impl<I2C: i2c::Write> HD44780<I2CBus<I2C>> {
 	/// Create an instance of a `HD44780` from an i2c write peripheral,
-	/// the `HD44780` I2C address and a struct implementing the delay trait.
+	/// I2C address and a struct implementing the delay trait.
+	/// The `HD44780` is driven through a PCF8574 I2C port expander.
 	/// - The delay instance is used to sleep between commands to
 	/// ensure the `HD44780` has enough time to process commands.
 	/// - The i2c peripheral is used to send data to the `HD44780` and to set
 	/// its register select and enable pins.
 	///
-	/// This mode operates on an I2C bus, using an I2C to parallel port expander
+	/// This mode operates on an I2C bus, using a PCF8574 I2C to port expander
+	/// The IC connections are described in `I2CBus`
 	///
 	pub fn new_i2c<D: DelayUs<u16> + DelayMs<u8>>(
 		i2c_bus: I2C,
@@ -202,10 +204,51 @@ impl<I2C: i2c::Write> HD44780<I2CBus<I2C>> {
 	}
 }
 
+impl<I2C: i2c::Write> HD44780<I2CMCP23008Bus<I2C>> {
+	/// Create an instance of a `HD44780` from an i2c write peripheral,
+	/// I2C address and a struct implementing the delay trait.
+	/// The `HD44780` is driven through a MCP23008 I2C port expander.
+	/// - The delay instance is used to sleep between commands to
+	/// ensure the `HD44780` has enough time to process commands.
+	/// - The i2c peripheral is used to send data to the `HD44780` and to set
+	/// its register select and enable pins.
+	///
+	/// This mode operates on an I2C bus, using an I2C to parallel port expander based on MCP23008.
+	/// The IC connections are described in `I2CMCP23008Bus`
+	///
+	pub fn new_i2c_mcp23008<D: DelayUs<u16> + DelayMs<u8>>(
+		i2c_bus: I2C,
+		address: u8,
+		backlight: bool,
+		delay: &mut D,
+	) -> Result<HD44780<I2CMCP23008Bus<I2C>>> {
+		let mut hd = HD44780 {
+			bus: I2CMCP23008Bus::new(i2c_bus, address, backlight)?,
+			entry_mode: EntryMode::default(),
+			display_mode: DisplayMode::default(),
+			display_size: DisplaySize::default(),
+		};
+
+		hd.init_4bit(delay)?;
+
+		return Ok(hd);
+	}
+}
+
 impl<B> HD44780<B>
 where
 	B: DataBus,
 {
+	/// Gets a reference to the underlying bus for this display.
+	pub fn get_ref(&self) -> &B {
+		&self.bus
+	}
+
+	/// Gets a mutable reference to the underlying bus for this display.
+	pub fn get_mut(&mut self) -> &mut B {
+		&mut self.bus
+	}
+
 	/// Unshifts the display and sets the cursor position to 0
 	///
 	/// ```rust,ignore

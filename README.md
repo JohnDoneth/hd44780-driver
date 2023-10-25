@@ -90,7 +90,7 @@ display.write_str(msg, delay.as_mut()).await;
 
 ### Features
 - 4-bit & 8-bit modes are supported
-- Support for i2c backpacks
+- Support for I2C backpacks based on PCF8574 and MCP23008 port expanders
 - Non-blocking API
 
 ### Todo
