@@ -247,6 +247,16 @@ where
 		Ok(())
 	}
 
+	/// Get the display size.
+	pub fn display_size(&self) -> DisplaySize {
+		self.display_size
+	}
+
+	/// Set the display size.
+	pub fn set_display_size(&mut self, display_size: DisplaySize) {
+		self.display_size = display_size;
+	}
+
 	/// If enabled, automatically scroll the display when a new
 	/// character is written to the display
 	///
