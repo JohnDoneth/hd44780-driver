@@ -349,6 +349,55 @@ where
 		Ok(())
 	}
 
+	/// Set the cursor position to the raw controller RAM address, without
+	/// checking if it's in bounds.
+	/// 
+	/// This is most useful on 2-line displays, where messages up to 40
+	/// characters on a single line can be written ahead-of-time and then
+	/// (auto)-scrolled. See [this primer] on LCD addressing for more
+	/// information.
+	///
+	/// ```rust,ignore
+	/// // Move to the end of the screen on a 16 columns x 2 rows display.
+	/// lcd.set_cursor_pos_unchecked(16, &mut delay);
+	///
+	/// // When the next character is written, the text on both lines will
+	/// // be shifted left by one character. The just-written character will
+	/// // then be shifted on-screen.
+	/// lcd.set_autoscroll(true, &mut delay);
+	/// lcd.write_byte('A' as u8, &mut delay);
+	///
+	/// // This sets the cursor to the second column of the second line, when
+	/// // no shifting has occurred. However, because of the previous shift, this
+	/// // cursor position is now the first column of the second line.
+	/// lcd.set_cursor_pos(17, &mut delay);
+	///
+	/// // When the next character is written, the text on both lines will
+	/// // remain in place. Since autoscroll shifted the display earlier, 'B'
+	/// // will be at the first column on the second line despite the previous
+	/// // `set_cursor_pos(17, ...)` call normally setting the cursor to the
+	/// // second column of the second line.
+	/// lcd.set_autoscroll(false, &mut delay);
+	/// lcd.write_byte('B' as u8, &mut delay);
+	///
+	/// // The letter 'C' is offscreen to the left of 'B'.
+	/// lcd.set_cursor_pos(16, &mut delay);
+	/// lcd.write_byte('C' as u8, &mut delay);
+	///
+	/// // The letter 'D' is offscreen to the left of 'A'.
+	/// lcd.set_cursor_pos_unchecked(17, &mut delay);
+	/// lcd.write_byte('D' as u8, &mut delay);
+	/// ```
+	/// 
+	/// [this primer]: https://web.alfredstate.edu/faculty/weimandn/lcd/lcd_addressing/lcd_addressing_index.html
+	pub fn set_cursor_pos_unchecked<D: DelayUs<u16> + DelayMs<u8>>(&mut self, position: u8, delay: &mut D) -> Result<()> {
+		let lower_7_bits = 0b0111_1111 & position;
+
+		self.write_command(0b1000_0000 | lower_7_bits, delay)?;
+
+		Ok(())
+	}
+
 	/// Shift just the cursor to the left or the right
 	///
 	/// ```rust,ignore
