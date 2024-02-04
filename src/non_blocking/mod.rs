@@ -1,8 +1,8 @@
 //use core::fmt::Result;
 //use core::fmt::Write;
 
-use embedded_hal::digital::v2::OutputPin;
-use embedded_hal_async::delay::DelayUs;
+use embedded_hal::digital::OutputPin;
+use embedded_hal_async::delay::DelayNs;
 use embedded_hal_async::i2c::I2c;
 
 pub mod bus;
@@ -54,7 +54,7 @@ impl<
 	/// - The enable pin is used to tell the `HD44780` that there
 	/// is data on the 8 data pins and that it should read them in.
 	///
-	pub async fn new_8bit<'a, D: DelayUs>(
+	pub async fn new_8bit<'a, D: DelayNs>(
 		rs: RS,
 		en: EN,
 		d0: D0,
@@ -107,7 +107,7 @@ impl<
 	/// broken up into it's upper and lower nibbles (4 bits) before
 	/// being sent over the data bus
 	///
-	pub async fn new_4bit<'a, D: DelayUs>(
+	pub async fn new_4bit<'a, D: DelayNs>(
 		rs: RS,
 		en: EN,
 		d4: D4,
@@ -143,7 +143,7 @@ impl<I2C: I2c + 'static> HD44780<I2CBus<I2C>> {
 	/// broken up into it's upper and lower nibbles (4 bits) before
 	/// being sent over the data bus
 	///
-	pub async fn new_i2c<'a, D: DelayUs>(i2c: I2C, address: u8, delay: &'a mut D) -> Result<HD44780<I2CBus<I2C>>> {
+	pub async fn new_i2c<'a, D: DelayNs>(i2c: I2C, address: u8, delay: &'a mut D) -> Result<HD44780<I2CBus<I2C>>> {
 		let mut hd = HD44780 {
 			bus: I2CBus::new(i2c, address),
 			entry_mode: EntryMode::default(),
@@ -165,7 +165,7 @@ where
 	/// ```rust,ignore
 	/// lcd.reset();
 	/// ```
-	pub async fn reset<'a, D: DelayUs>(&mut self, delay: &'a mut D) -> Result<()> {
+	pub async fn reset<'a, D: DelayNs>(&mut self, delay: &'a mut D) -> Result<()> {
 		self.write_command(0b0000_0010, delay).await?;
 
 		Ok(())
@@ -176,7 +176,7 @@ where
 	///
 	/// Note: This is equivilent to calling all of the other relavent
 	/// methods however this operation does it all in one go to the `HD44780`
-	pub async fn set_display_mode<'a, D: DelayUs>(
+	pub async fn set_display_mode<'a, D: DelayNs>(
 		&mut self,
 		display_mode: DisplayMode,
 		delay: &'a mut D,
@@ -195,7 +195,7 @@ where
 	/// ```rust,ignore
 	/// lcd.clear();
 	/// ```
-	pub async fn clear<'a, D: DelayUs>(&mut self, delay: &'a mut D) -> Result<()> {
+	pub async fn clear<'a, D: DelayNs>(&mut self, delay: &'a mut D) -> Result<()> {
 		self.write_command(0b0000_0001, delay).await?;
 
 		Ok(())
@@ -207,7 +207,7 @@ where
 	/// ```rust,ignore
 	/// lcd.set_autoscroll(true);
 	/// ```
-	pub async fn set_autoscroll<'a, D: DelayUs>(&mut self, enabled: bool, delay: &'a mut D) -> Result<()> {
+	pub async fn set_autoscroll<'a, D: DelayNs>(&mut self, enabled: bool, delay: &'a mut D) -> Result<()> {
 		self.entry_mode.shift_mode = enabled.into();
 
 		let cmd = self.entry_mode.as_byte();
@@ -218,7 +218,7 @@ where
 	}
 
 	/// Set if the cursor should be visible
-	pub async fn set_cursor_visibility<'a, D: DelayUs>(&mut self, visibility: Cursor, delay: &'a mut D) -> Result<()> {
+	pub async fn set_cursor_visibility<'a, D: DelayNs>(&mut self, visibility: Cursor, delay: &'a mut D) -> Result<()> {
 		self.display_mode.cursor_visibility = visibility;
 
 		let cmd = self.display_mode.as_byte();
@@ -229,7 +229,7 @@ where
 	}
 
 	/// Set if the characters on the display should be visible
-	pub async fn set_display<'a, D: DelayUs>(&mut self, display: Display, delay: &'a mut D) -> Result<()> {
+	pub async fn set_display<'a, D: DelayNs>(&mut self, display: Display, delay: &'a mut D) -> Result<()> {
 		self.display_mode.display = display;
 
 		let cmd = self.display_mode.as_byte();
@@ -240,7 +240,7 @@ where
 	}
 
 	/// Set if the cursor should blink
-	pub async fn set_cursor_blink<'a, D: DelayUs>(&mut self, blink: CursorBlink, delay: &'a mut D) -> Result<()> {
+	pub async fn set_cursor_blink<'a, D: DelayNs>(&mut self, blink: CursorBlink, delay: &'a mut D) -> Result<()> {
 		self.display_mode.cursor_blink = blink;
 
 		let cmd = self.display_mode.as_byte();
@@ -259,7 +259,7 @@ where
 	/// // Move left when a new character is written
 	/// lcd.set_cursor_mode(CursorMode::Left)
 	/// ```
-	pub async fn set_cursor_mode<'a, D: DelayUs>(&mut self, mode: CursorMode, delay: &'a mut D) -> Result<()> {
+	pub async fn set_cursor_mode<'a, D: DelayNs>(&mut self, mode: CursorMode, delay: &'a mut D) -> Result<()> {
 		self.entry_mode.cursor_mode = mode;
 
 		let cmd = self.entry_mode.as_byte();
@@ -275,7 +275,7 @@ where
 	/// // Move to line 2
 	/// lcd.set_cursor_pos(40)
 	/// ```
-	pub async fn set_cursor_pos<'a, D: DelayUs>(&mut self, position: u8, delay: &'a mut D) -> Result<()> {
+	pub async fn set_cursor_pos<'a, D: DelayNs>(&mut self, position: u8, delay: &'a mut D) -> Result<()> {
 		let lower_7_bits = 0b0111_1111 & position;
 
 		self.write_command(0b1000_0000 | lower_7_bits, delay).await?;
@@ -289,7 +289,7 @@ where
 	/// lcd.shift_cursor(Direction::Left);
 	/// lcd.shift_cursor(Direction::Right);
 	/// ```
-	pub async fn shift_cursor<'a, D: DelayUs>(&mut self, dir: Direction, delay: &'a mut D) -> Result<()> {
+	pub async fn shift_cursor<'a, D: DelayNs>(&mut self, dir: Direction, delay: &'a mut D) -> Result<()> {
 		let bits = match dir {
 			Direction::Left => 0b0000_0000,
 			Direction::Right => 0b0000_0100,
@@ -306,7 +306,7 @@ where
 	/// lcd.shift_display(Direction::Left);
 	/// lcd.shift_display(Direction::Right);
 	/// ```
-	pub async fn shift_display<'a, D: DelayUs>(&mut self, dir: Direction, delay: &'a mut D) -> Result<()> {
+	pub async fn shift_display<'a, D: DelayNs>(&mut self, dir: Direction, delay: &'a mut D) -> Result<()> {
 		let bits = match dir {
 			Direction::Left => 0b0000_0000,
 			Direction::Right => 0b0000_0100,
@@ -325,11 +325,11 @@ where
 	/// ```rust,ignore
 	/// lcd.write_char('A', &'a mut DelayUs)?; // prints 'A'
 	/// ```
-	pub async fn write_char<'a, D: DelayUs>(&mut self, data: char, delay: &'a mut D) -> Result<()> {
+	pub async fn write_char<'a, D: DelayNs>(&mut self, data: char, delay: &'a mut D) -> Result<()> {
 		self.write_byte(data as u8, delay).await
 	}
 
-	async fn write_command<'a, D: DelayUs>(&mut self, cmd: u8, delay: &'a mut D) -> Result<()> {
+	async fn write_command<'a, D: DelayNs>(&mut self, cmd: u8, delay: &'a mut D) -> Result<()> {
 		self.bus.write(cmd, false, delay).await?;
 
 		// Wait for the command to be processed
@@ -337,7 +337,7 @@ where
 		Ok(())
 	}
 
-	async fn init_4bit<'a, D: DelayUs>(&mut self, delay: &'a mut D) -> Result<()> {
+	async fn init_4bit<'a, D: DelayNs>(&mut self, delay: &'a mut D) -> Result<()> {
 		// Wait for the LCD to wakeup if it was off
 		delay.delay_ms(15).await;
 
@@ -385,7 +385,7 @@ where
 	}
 
 	// Follow the 8-bit setup procedure as specified in the HD44780 datasheet
-	async fn init_8bit<'a, D: DelayUs>(&mut self, delay: &'a mut D) -> Result<()> {
+	async fn init_8bit<'a, D: DelayNs>(&mut self, delay: &'a mut D) -> Result<()> {
 		// Wait for the LCD to wakeup if it was off
 		delay.delay_ms(15).await;
 
@@ -434,7 +434,7 @@ where
 	/// ```rust,ignore
 	/// lcd.write_str("Hello, World!", &'a mut DelayUs)?;
 	/// ```
-	pub async fn write_str<'a, D: DelayUs>(&mut self, string: &str, delay: &'a mut D) -> Result<()> {
+	pub async fn write_str<'a, D: DelayNs>(&mut self, string: &str, delay: &'a mut D) -> Result<()> {
 		self.write_bytes(string.as_bytes(), delay).await
 	}
 
@@ -444,7 +444,7 @@ where
 	/// ```rust,ignore
 	/// lcd.write_bytes(b"Hello, World!", &'a mut DelayUs)?;
 	/// ```
-	pub async fn write_bytes<'a, D: DelayUs>(&mut self, string: &[u8], delay: &'a mut D) -> Result<()> {
+	pub async fn write_bytes<'a, D: DelayNs>(&mut self, string: &[u8], delay: &'a mut D) -> Result<()> {
 		for &b in string {
 			self.write_byte(b, delay).await?;
 		}
@@ -465,7 +465,7 @@ where
 	/// lcd.write_byte(b'~', &'a mut DelayUs)?; // usually prints 🡢
 	/// lcd.write_byte(b'\x7f', &'a mut DelayUs)?; // usually prints 🡠
 	/// ```
-	pub async fn write_byte<'a, D: DelayUs>(&mut self, data: u8, delay: &'a mut D) -> Result<()> {
+	pub async fn write_byte<'a, D: DelayNs>(&mut self, data: u8, delay: &'a mut D) -> Result<()> {
 		self.bus.write(data, true, delay).await?;
 
 		// Wait for the command to be processed
