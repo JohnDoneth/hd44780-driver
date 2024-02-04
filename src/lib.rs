@@ -4,7 +4,7 @@
 
 use display_size::DisplaySize;
 use embedded_hal::delay::DelayNs;
-use embedded_hal::i2c::{I2c, Error};
+use embedded_hal::i2c::I2c;
 use embedded_hal::digital::OutputPin;
 
 pub mod bus;

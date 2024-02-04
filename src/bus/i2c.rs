@@ -1,5 +1,5 @@
 use embedded_hal::delay::DelayNs;
-use embedded_hal::i2c::{I2c, Error};
+use embedded_hal::i2c::I2c;
 
 use crate::{bus::DataBus, error::Result};
 
