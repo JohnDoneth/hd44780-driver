@@ -1,5 +1,5 @@
-use embedded_hal::blocking::delay::{DelayMs, DelayUs};
-use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::delay::DelayNs;
+use embedded_hal::digital::OutputPin;
 
 use crate::bus::DataBus;
 use crate::error::{Error, Result};
@@ -89,7 +89,7 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, D7: OutputPin> DataBus
 	for FourBitBus<RS, EN, D4, D5, D6, D7>
 {
-	fn write<D: DelayUs<u16> + DelayMs<u8>>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<()> {
+	fn write<D: DelayNs>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<()> {
 		if data {
 			self.rs.set_high().map_err(|_| Error)?;
 		} else {
@@ -100,14 +100,14 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 
 		// Pulse the enable pin to recieve the upper nibble
 		self.en.set_high().map_err(|_| Error)?;
-		delay.delay_ms(2u8);
+		delay.delay_ms(2u32);
 		self.en.set_low().map_err(|_| Error)?;
 
 		self.write_lower_nibble(byte)?;
 
 		// Pulse the enable pin to recieve the lower nibble
 		self.en.set_high().map_err(|_| Error)?;
-		delay.delay_ms(2u8);
+		delay.delay_ms(2u32);
 		self.en.set_low().map_err(|_| Error)?;
 
 		if data {
