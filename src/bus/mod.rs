@@ -3,10 +3,12 @@ use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 mod eightbit;
 mod fourbit;
 mod i2c;
+mod i2c_mcp23008;
 
 pub use self::eightbit::EightBitBus;
 pub use self::fourbit::FourBitBus;
 pub use self::i2c::I2CBus;
+pub use self::i2c_mcp23008::I2CMCP23008Bus;
 
 use crate::error::Result;
 
