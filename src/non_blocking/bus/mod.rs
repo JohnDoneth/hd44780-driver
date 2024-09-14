@@ -12,7 +12,9 @@ pub use self::i2c::I2CBus;
 use crate::error::Result;
 
 pub trait DataBus {
-	type WriteFuture<'a, D: 'a + DelayNs>: Future<Output = Result<()>>
+	type Error: core::fmt::Debug;
+
+	type WriteFuture<'a, D: 'a + DelayNs>: Future<Output = Result<(), Self::Error>>
 	where
 		Self: 'a;
 

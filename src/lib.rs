@@ -2,16 +2,18 @@
 #![cfg_attr(feature = "async", feature(type_alias_impl_trait))]
 #![cfg_attr(feature = "async", feature(impl_trait_in_assoc_type))]
 
+use core::convert::Infallible;
+
 use display_size::DisplaySize;
-use embedded_hal::delay::DelayNs;
-use embedded_hal::i2c::I2c;
 use embedded_hal::digital::OutputPin;
+use embedded_hal::i2c::I2c;
+use embedded_hal::{delay::DelayNs, digital};
 
 pub mod bus;
 use bus::{DataBus, EightBitBus, FourBitBus, I2CBus};
 
 pub mod error;
-use error::Result;
+use error::{Error, Result};
 
 pub mod entry_mode;
 
@@ -56,16 +58,17 @@ pub enum CursorBlink {
 }
 
 impl<
-		RS: OutputPin,
-		EN: OutputPin,
-		D0: OutputPin,
-		D1: OutputPin,
-		D2: OutputPin,
-		D3: OutputPin,
-		D4: OutputPin,
-		D5: OutputPin,
-		D6: OutputPin,
-		D7: OutputPin,
+		RS: OutputPin<Error = E>,
+		EN: OutputPin<Error = E>,
+		D0: OutputPin<Error = E>,
+		D1: OutputPin<Error = E>,
+		D2: OutputPin<Error = E>,
+		D3: OutputPin<Error = E>,
+		D4: OutputPin<Error = E>,
+		D5: OutputPin<Error = E>,
+		D6: OutputPin<Error = E>,
+		D7: OutputPin<Error = E>,
+		E: digital::Error,
 	> HD44780<EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>>
 {
 	/// Create an instance of a `HD44780` from 8 data pins, a register select
@@ -93,7 +96,7 @@ impl<
 		d6: D6,
 		d7: D7,
 		delay: &mut D,
-	) -> Result<HD44780<EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>>> {
+	) -> Result<HD44780<EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>>, E> {
 		let mut hd = HD44780 {
 			bus: EightBitBus::from_pins(rs, en, d0, d1, d2, d3, d4, d5, d6, d7),
 			entry_mode: EntryMode::default(),
@@ -111,12 +114,9 @@ impl<
 ///
 /// https://web.alfredstate.edu/faculty/weimandn/lcd/lcd_addressing/lcd_addressing_index.html
 /// Assumes type-2 addressing for 16x1 displays
-pub fn get_position(position: (u8, u8), size: (u8, u8)) -> Result<u8> {
+pub fn get_position(position: (u8, u8), size: (u8, u8)) -> Result<u8, Infallible> {
 	if (position.0 >= size.0) || (position.1 >= size.1) {
-		panic!(
-			"Coordinates out of bounds: ({};{}) not fitting in a {}x{} display",
-			position.0, position.1, size.0, size.1
-		);
+		return Err(Error::Position { position, size });
 	}
 
 	let mut addr = position.0 & 0x3f;
@@ -129,8 +129,19 @@ pub fn get_position(position: (u8, u8), size: (u8, u8)) -> Result<u8> {
 	Ok(addr)
 }
 
-impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, D7: OutputPin>
-	HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>
+fn get_position_generic<E>(position: (u8, u8), size: (u8, u8)) -> Result<u8, E> {
+	get_position(position, size).map_err(Error::from_non_io)
+}
+
+impl<
+		RS: OutputPin<Error = E>,
+		EN: OutputPin<Error = E>,
+		D4: OutputPin<Error = E>,
+		D5: OutputPin<Error = E>,
+		D6: OutputPin<Error = E>,
+		D7: OutputPin<Error = E>,
+		E: digital::Error,
+	> HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>
 {
 	/// Create an instance of a `HD44780` from 4 data pins, a register select
 	/// pin, an enable pin and a struct implementing the delay trait.
@@ -160,7 +171,7 @@ impl<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, 
 		d6: D6,
 		d7: D7,
 		delay: &mut D,
-	) -> Result<HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>> {
+	) -> Result<HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>, E> {
 		let mut hd = HD44780 {
 			bus: FourBitBus::from_pins(rs, en, d4, d5, d6, d7),
 			entry_mode: EntryMode::default(),
@@ -184,11 +195,7 @@ impl<I2C: I2c> HD44780<I2CBus<I2C>> {
 	///
 	/// This mode operates on an I2C bus, using an I2C to parallel port expander
 	///
-	pub fn new_i2c<D: DelayNs>(
-		i2c_bus: I2C,
-		address: u8,
-		delay: &mut D,
-	) -> Result<HD44780<I2CBus<I2C>>> {
+	pub fn new_i2c<D: DelayNs>(i2c_bus: I2C, address: u8, delay: &mut D) -> Result<HD44780<I2CBus<I2C>>, I2C::Error> {
 		let mut hd = HD44780 {
 			bus: I2CBus::new(i2c_bus, address),
 			entry_mode: EntryMode::default(),
@@ -211,7 +218,7 @@ where
 	/// ```rust,ignore
 	/// lcd.reset();
 	/// ```
-	pub fn reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<()> {
+	pub fn reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), B::Error> {
 		self.write_command(0b0000_0010, delay)?;
 
 		Ok(())
@@ -222,11 +229,7 @@ where
 	///
 	/// Note: This is equivilent to calling all of the other relavent
 	/// methods however this operation does it all in one go to the `HD44780`
-	pub fn set_display_mode<D: DelayNs>(
-		&mut self,
-		display_mode: DisplayMode,
-		delay: &mut D,
-	) -> Result<()> {
+	pub fn set_display_mode<D: DelayNs>(&mut self, display_mode: DisplayMode, delay: &mut D) -> Result<(), B::Error> {
 		self.display_mode = display_mode;
 
 		let cmd_byte = self.display_mode.as_byte();
@@ -241,7 +244,7 @@ where
 	/// ```rust,ignore
 	/// lcd.clear();
 	/// ```
-	pub fn clear<D: DelayNs>(&mut self, delay: &mut D) -> Result<()> {
+	pub fn clear<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), B::Error> {
 		self.write_command(0b0000_0001, delay)?;
 
 		Ok(())
@@ -253,7 +256,7 @@ where
 	/// ```rust,ignore
 	/// lcd.set_autoscroll(true);
 	/// ```
-	pub fn set_autoscroll<D: DelayNs>(&mut self, enabled: bool, delay: &mut D) -> Result<()> {
+	pub fn set_autoscroll<D: DelayNs>(&mut self, enabled: bool, delay: &mut D) -> Result<(), B::Error> {
 		self.entry_mode.shift_mode = enabled.into();
 
 		let cmd = self.entry_mode.as_byte();
@@ -264,11 +267,7 @@ where
 	}
 
 	/// Set if the cursor should be visible
-	pub fn set_cursor_visibility<D: DelayNs>(
-		&mut self,
-		visibility: Cursor,
-		delay: &mut D,
-	) -> Result<()> {
+	pub fn set_cursor_visibility<D: DelayNs>(&mut self, visibility: Cursor, delay: &mut D) -> Result<(), B::Error> {
 		self.display_mode.cursor_visibility = visibility;
 
 		let cmd = self.display_mode.as_byte();
@@ -279,7 +278,7 @@ where
 	}
 
 	/// Set if the characters on the display should be visible
-	pub fn set_display<D: DelayNs>(&mut self, display: Display, delay: &mut D) -> Result<()> {
+	pub fn set_display<D: DelayNs>(&mut self, display: Display, delay: &mut D) -> Result<(), B::Error> {
 		self.display_mode.display = display;
 
 		let cmd = self.display_mode.as_byte();
@@ -290,7 +289,7 @@ where
 	}
 
 	/// Set if the cursor should blink
-	pub fn set_cursor_blink<D: DelayNs>(&mut self, blink: CursorBlink, delay: &mut D) -> Result<()> {
+	pub fn set_cursor_blink<D: DelayNs>(&mut self, blink: CursorBlink, delay: &mut D) -> Result<(), B::Error> {
 		self.display_mode.cursor_blink = blink;
 
 		let cmd = self.display_mode.as_byte();
@@ -309,7 +308,7 @@ where
 	/// // Move left when a new character is written
 	/// lcd.set_cursor_mode(CursorMode::Left)
 	/// ```
-	pub fn set_cursor_mode<D: DelayNs>(&mut self, mode: CursorMode, delay: &mut D) -> Result<()> {
+	pub fn set_cursor_mode<D: DelayNs>(&mut self, mode: CursorMode, delay: &mut D) -> Result<(), B::Error> {
 		self.entry_mode.cursor_mode = mode;
 
 		let cmd = self.entry_mode.as_byte();
@@ -326,7 +325,7 @@ where
 	/// // for a 20 columns display
 	/// lcd.set_cursor_pos(40)
 	/// ```
-	pub fn set_cursor_pos<D: DelayNs>(&mut self, position: u8, delay: &mut D) -> Result<()> {
+	pub fn set_cursor_pos<D: DelayNs>(&mut self, position: u8, delay: &mut D) -> Result<(), B::Error> {
 		let size = self.display_size.get();
 		let position = (position % size.0, position / size.0);
 		self.set_cursor_xy(position, delay)
@@ -338,9 +337,9 @@ where
 	/// // Move to the start of line 3
 	/// lcd.set_cursor_pos_xy(0,2)
 	/// ```
-	pub fn set_cursor_xy<D: DelayNs>(&mut self, position: (u8, u8), delay: &mut D) -> Result<()> {
+	pub fn set_cursor_xy<D: DelayNs>(&mut self, position: (u8, u8), delay: &mut D) -> Result<(), B::Error> {
 		let size = self.display_size.get();
-		let pos = get_position(position, size)?;
+		let pos = get_position_generic(position, size)?;
 
 		let lower_7_bits = 0b0111_1111 & pos;
 
@@ -355,7 +354,7 @@ where
 	/// lcd.shift_cursor(Direction::Left);
 	/// lcd.shift_cursor(Direction::Right);
 	/// ```
-	pub fn shift_cursor<D: DelayNs>(&mut self, dir: Direction, delay: &mut D) -> Result<()> {
+	pub fn shift_cursor<D: DelayNs>(&mut self, dir: Direction, delay: &mut D) -> Result<(), B::Error> {
 		let bits = match dir {
 			Direction::Left => 0b0000_0000,
 			Direction::Right => 0b0000_0100,
@@ -372,7 +371,7 @@ where
 	/// lcd.shift_display(Direction::Left);
 	/// lcd.shift_display(Direction::Right);
 	/// ```
-	pub fn shift_display<D: DelayNs>(&mut self, dir: Direction, delay: &mut D) -> Result<()> {
+	pub fn shift_display<D: DelayNs>(&mut self, dir: Direction, delay: &mut D) -> Result<(), B::Error> {
 		let bits = match dir {
 			Direction::Left => 0b0000_0000,
 			Direction::Right => 0b0000_0100,
@@ -391,11 +390,11 @@ where
 	/// ```rust,ignore
 	/// lcd.write_char('A', &mut delay)?; // prints 'A'
 	/// ```
-	pub fn write_char<D: DelayNs>(&mut self, data: char, delay: &mut D) -> Result<()> {
+	pub fn write_char<D: DelayNs>(&mut self, data: char, delay: &mut D) -> Result<(), B::Error> {
 		self.write_byte(data as u8, delay)
 	}
 
-	fn write_command<D: DelayNs>(&mut self, cmd: u8, delay: &mut D) -> Result<()> {
+	fn write_command<D: DelayNs>(&mut self, cmd: u8, delay: &mut D) -> Result<(), B::Error> {
 		self.bus.write(cmd, false, delay)?;
 
 		// Wait for the command to be processed
@@ -403,7 +402,7 @@ where
 		Ok(())
 	}
 
-	fn init_4bit<D: DelayNs>(&mut self, delay: &mut D) -> Result<()> {
+	fn init_4bit<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), B::Error> {
 		// Wait for the LCD to wakeup if it was off
 		delay.delay_ms(15u32);
 
@@ -451,7 +450,7 @@ where
 	}
 
 	// Follow the 8-bit setup procedure as specified in the HD44780 datasheet
-	fn init_8bit<D: DelayNs>(&mut self, delay: &mut D) -> Result<()> {
+	fn init_8bit<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), B::Error> {
 		// Wait for the LCD to wakeup if it was off
 		delay.delay_ms(15u32);
 
@@ -500,7 +499,7 @@ where
 	/// ```rust,ignore
 	/// lcd.write_str("Hello, World!", &mut delay)?;
 	/// ```
-	pub fn write_str<D: DelayNs>(&mut self, string: &str, delay: &mut D) -> Result<()> {
+	pub fn write_str<D: DelayNs>(&mut self, string: &str, delay: &mut D) -> Result<(), B::Error> {
 		self.write_bytes(string.as_bytes(), delay)
 	}
 
@@ -510,7 +509,7 @@ where
 	/// ```rust,ignore
 	/// lcd.write_bytes(b"Hello, World!", &mut delay)?;
 	/// ```
-	pub fn write_bytes<D: DelayNs>(&mut self, string: &[u8], delay: &mut D) -> Result<()> {
+	pub fn write_bytes<D: DelayNs>(&mut self, string: &[u8], delay: &mut D) -> Result<(), B::Error> {
 		for &b in string {
 			self.write_byte(b, delay)?;
 		}
@@ -531,7 +530,7 @@ where
 	/// lcd.write_byte(b'~', &mut delay)?; // usually prints 🡢
 	/// lcd.write_byte(b'\x7f', &mut delay)?; // usually prints 🡠
 	/// ```
-	pub fn write_byte<D: DelayNs>(&mut self, data: u8, delay: &mut D) -> Result<()> {
+	pub fn write_byte<D: DelayNs>(&mut self, data: u8, delay: &mut D) -> Result<(), B::Error> {
 		self.bus.write(data, true, delay)?;
 
 		// Wait for the command to be processed

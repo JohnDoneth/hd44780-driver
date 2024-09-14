@@ -1,6 +1,7 @@
 use embedded_hal::delay::DelayNs;
 use embedded_hal::i2c::I2c;
 
+use crate::error::{Error, Port};
 use crate::{bus::DataBus, error::Result};
 
 pub struct I2CBus<I2C> {
@@ -20,26 +21,28 @@ impl<I2C: I2c> I2CBus<I2C> {
 
 	/// Write a nibble to the lcd
 	/// The nibble should be in the upper part of the byte
-	fn write_nibble<D: DelayNs>(&mut self, nibble: u8, data: bool, delay: &mut D) {
+	fn write_nibble<D: DelayNs>(&mut self, nibble: u8, data: bool, delay: &mut D) -> Result<(), I2C::Error> {
 		let rs = match data {
 			false => 0u8,
 			true => REGISTER_SELECT,
 		};
 		let byte = nibble | rs | BACKLIGHT;
 
-		let _ = self.i2c_bus.write(self.address, &[byte, byte | ENABLE]);
+		self.i2c_bus.write(self.address, &[byte, byte | ENABLE]).map_err(Error::wrap_io(Port::I2C))?;
 		delay.delay_ms(2u32);
-		let _ = self.i2c_bus.write(self.address, &[byte]);
+		self.i2c_bus.write(self.address, &[byte]).map_err(Error::wrap_io(Port::I2C))
 	}
 }
 
 impl<I2C: I2c> DataBus for I2CBus<I2C> {
-	fn write<D: DelayNs>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<()> {
+	type Error = I2C::Error;
+
+	fn write<D: DelayNs>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<(), Self::Error> {
 		let upper_nibble = byte & 0xF0;
-		self.write_nibble(upper_nibble, data, delay);
+		self.write_nibble(upper_nibble, data, delay)?;
 
 		let lower_nibble = (byte & 0x0F) << 4;
-		self.write_nibble(lower_nibble, data, delay);
+		self.write_nibble(lower_nibble, data, delay)?;
 
 		Ok(())
 	}

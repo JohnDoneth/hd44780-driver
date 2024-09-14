@@ -2,7 +2,7 @@ use core::future::Future;
 use embedded_hal_async::delay::DelayNs;
 use embedded_hal_async::i2c::I2c;
 
-use crate::error::Result;
+use crate::error::{Error, Port, Result};
 use crate::non_blocking::bus::DataBus;
 
 pub struct I2CBus<I2C: I2c> {
@@ -22,29 +22,36 @@ impl<I2C: I2c<u8>> I2CBus<I2C> {
 
 	/// Write a nibble to the lcd
 	/// The nibble should be in the upper part of the byte
-	async fn write_nibble<'a, D: DelayNs + 'a>(&mut self, nibble: u8, data: bool, delay: &'a mut D) {
+	async fn write_nibble<'a, D: DelayNs + 'a>(
+		&mut self,
+		nibble: u8,
+		data: bool,
+		delay: &'a mut D,
+	) -> Result<(), I2C::Error> {
 		let rs = match data {
 			false => 0u8,
 			true => REGISTER_SELECT,
 		};
 		let byte = nibble | rs | BACKLIGHT;
 
-		let _ = self.i2c_bus.write(self.address, &[byte, byte | ENABLE]).await;
+		self.i2c_bus.write(self.address, &[byte, byte | ENABLE]).await.map_err(Error::wrap_io(Port::I2C))?;
 		delay.delay_ms(2).await;
-		let _ = self.i2c_bus.write(self.address, &[byte]).await;
+		self.i2c_bus.write(self.address, &[byte]).await.map_err(Error::wrap_io(Port::I2C))
 	}
 }
 
 impl<I2C: I2c + 'static> DataBus for I2CBus<I2C> {
-	type WriteFuture<'a, D: 'a + DelayNs> = impl Future<Output = Result<()>> + 'a;
+	type Error = I2C::Error;
+
+	type WriteFuture<'a, D: 'a + DelayNs> = impl Future<Output = Result<(), Self::Error>> + 'a;
 
 	fn write<'a, D: DelayNs + 'a>(&'a mut self, byte: u8, data: bool, delay: &'a mut D) -> Self::WriteFuture<'a, D> {
 		async move {
 			let upper_nibble = byte & 0xF0;
-			self.write_nibble(upper_nibble, data, delay).await;
+			self.write_nibble(upper_nibble, data, delay).await?;
 
 			let lower_nibble = (byte & 0x0F) << 4;
-			self.write_nibble(lower_nibble, data, delay).await;
+			self.write_nibble(lower_nibble, data, delay).await?;
 
 			Ok(())
 		}

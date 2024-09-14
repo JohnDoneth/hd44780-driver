@@ -11,7 +11,9 @@ pub use self::i2c::I2CBus;
 use crate::error::Result;
 
 pub trait DataBus {
-	fn write<D: DelayNs>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<()>;
+	type Error: core::fmt::Debug;
+
+	fn write<D: DelayNs>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<(), Self::Error>;
 
 	// TODO
 	// fn read(...)
