@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub struct DisplaySize {
 	columns: u8,
 	lines: u8,
