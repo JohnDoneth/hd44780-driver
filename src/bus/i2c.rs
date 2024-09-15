@@ -19,6 +19,10 @@ impl<I2C: I2c> I2CBus<I2C> {
 		I2CBus { i2c_bus, address }
 	}
 
+	pub fn destroy(self) -> I2C {
+		self.i2c_bus
+	}
+
 	/// Write a nibble to the lcd
 	/// The nibble should be in the upper part of the byte
 	fn write_nibble<D: DelayNs>(&mut self, nibble: u8, data: bool, delay: &mut D) -> Result<(), I2C::Error> {

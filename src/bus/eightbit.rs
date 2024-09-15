@@ -60,6 +60,10 @@ impl<
 		EightBitBus { rs, en, d0, d1, d2, d3, d4, d5, d6, d7 }
 	}
 
+	pub fn destroy(self) -> (RS, EN, D0, D1, D2, D3, D4, D5, D6, D7) {
+		(self.rs, self.en, self.d0, self.d1, self.d2, self.d3, self.d4, self.d5, self.d6, self.d7)
+	}
+
 	fn set_bus_bits(&mut self, data: u8) -> Result<(), E> {
 		let db0: bool = (0b0000_0001 & data) != 0;
 		let db1: bool = (0b0000_0010 & data) != 0;

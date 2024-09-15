@@ -27,6 +27,10 @@ impl<
 		FourBitBus { rs, en, d4, d5, d6, d7 }
 	}
 
+	pub fn destroy(self) -> (RS, EN, D4, D5, D6, D7) {
+		(self.rs, self.en, self.d4, self.d5, self.d6, self.d7)
+	}
+
 	fn write_lower_nibble(&mut self, data: u8) -> Result<(), E> {
 		let db0: bool = (0b0000_0001 & data) != 0;
 		let db1: bool = (0b0000_0010 & data) != 0;

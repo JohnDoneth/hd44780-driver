@@ -1,5 +1,5 @@
 /// Determines if the cursor should be incremented or decremented on write
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CursorMode {
 	#[default]
 	Increment,
@@ -7,7 +7,7 @@ pub enum CursorMode {
 }
 
 /// Determines if the screen should be shifted on write
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ShiftMode {
 	Enabled,
 	#[default]
@@ -24,7 +24,7 @@ impl From<bool> for ShiftMode {
 	}
 }
 
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct EntryMode {
 	pub cursor_mode: CursorMode,
 	pub shift_mode: ShiftMode,
