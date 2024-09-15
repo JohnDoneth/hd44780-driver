@@ -66,7 +66,7 @@ const fn scrollable_margin(w: u8, h: u8, l: u8) -> u8 {
 }
 
 /// Memory Map for single-row displays that are using one line / contiguous memory.
-pub struct Contiguous1RMemoryMap<const WIDTH: u8, const LINE_WIDTH: u8 = 0x4F>;
+pub struct Contiguous1RMemoryMap<const WIDTH: u8, const LINE_WIDTH: u8 = 0x50>;
 
 impl<const W: u8, const L: u8> Contiguous1RMemoryMap<W, L> {
 	pub fn new() -> Self {
@@ -79,7 +79,7 @@ impl<const W: u8, const L: u8> DisplayMemoryMap for Contiguous1RMemoryMap<W, L> 
 	///
 	/// See https://web.alfredstate.edu/faculty/weimandn/lcd/lcd_addressing/lcd_addressing_index.html
 	fn address_for_xy(&self, x: u8, y: u8) -> Option<u8> {
-		if y != 0 || x > self.row_width(y) {
+		if y != 0 || x >= self.row_width(y) {
 			None
 		} else {
 			Some(x)
