@@ -225,7 +225,11 @@ where
 	}
 
 	/// Set if the cursor should be visible
-	pub async fn set_cursor_visibility<'a, D: DelayNs>(&mut self, visibility: Cursor, delay: &'a mut D) -> Result<(), B::Error> {
+	pub async fn set_cursor_visibility<'a, D: DelayNs>(
+		&mut self,
+		visibility: Cursor,
+		delay: &'a mut D,
+	) -> Result<(), B::Error> {
 		self.display_mode.cursor_visibility = visibility;
 
 		let cmd = self.display_mode.as_byte();
@@ -247,7 +251,11 @@ where
 	}
 
 	/// Set if the cursor should blink
-	pub async fn set_cursor_blink<'a, D: DelayNs>(&mut self, blink: CursorBlink, delay: &'a mut D) -> Result<(), B::Error> {
+	pub async fn set_cursor_blink<'a, D: DelayNs>(
+		&mut self,
+		blink: CursorBlink,
+		delay: &'a mut D,
+	) -> Result<(), B::Error> {
 		self.display_mode.cursor_blink = blink;
 
 		let cmd = self.display_mode.as_byte();
@@ -266,7 +274,11 @@ where
 	/// // Move left when a new character is written
 	/// lcd.set_cursor_mode(CursorMode::Left)
 	/// ```
-	pub async fn set_cursor_mode<'a, D: DelayNs>(&mut self, mode: CursorMode, delay: &'a mut D) -> Result<(), B::Error> {
+	pub async fn set_cursor_mode<'a, D: DelayNs>(
+		&mut self,
+		mode: CursorMode,
+		delay: &'a mut D,
+	) -> Result<(), B::Error> {
 		self.entry_mode.cursor_mode = mode;
 
 		let cmd = self.entry_mode.as_byte();
