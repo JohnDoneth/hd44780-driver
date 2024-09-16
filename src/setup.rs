@@ -37,7 +37,7 @@ mod sealed {
 /// - [`DisplayOptions8Bit`]
 pub trait DisplayOptions: sealed::SealedDisplayOptions {}
 
-/// Placeholder until the pin is specified.
+/// Placeholder until the pin/bus is specified.
 #[derive(Debug, Clone, Copy)]
 pub struct Unspecified;
 
@@ -75,7 +75,7 @@ pub struct DisplayOptions4Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, E
 	pub d7: D7,
 }
 
-pub struct DisplayOptionsI2C<M: DisplayMemoryMap, C: CharsetWithFallback, I2C: I2c> {
+pub struct DisplayOptionsI2C<M: DisplayMemoryMap, C: CharsetWithFallback, I2C> {
 	/// Memory map used for mapping 2D coordinates to the display.
 	pub memory_map: M,
 	/// The character set this display uses.
@@ -147,14 +147,14 @@ impl<M: DisplayMemoryMap>
 	}
 }
 
-impl<M: DisplayMemoryMap, I2C: I2c> DisplayOptionsI2C<M, EmptyFallback<CharsetUniversal>, I2C> {
-	pub fn new(memory_map: M, i2c_bus: I2C, address: u8) -> Self {
+impl<M: DisplayMemoryMap> DisplayOptionsI2C<M, EmptyFallback<CharsetUniversal>, Unspecified> {
+	pub fn new(memory_map: M) -> Self {
 		Self {
 			memory_map,
 			charset: CharsetUniversal::EMPTY_FALLBACK,
 			entry_mode: EntryMode::default(),
-			i2c_bus,
-			address,
+			i2c_bus: Unspecified,
+			address: 0,
 		}
 	}
 }
@@ -187,7 +187,7 @@ macro_rules! builder_functions {
 
 builder_functions!(DisplayOptions8Bit<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7> { rs, en, d0, d1, d2, d3, d4, d5, d6, d7 });
 builder_functions!(DisplayOptions4Bit<RS, EN, D4, D5, D6, D7> { rs, en, d4, d5, d6, d7 });
-builder_functions!(DisplayOptionsI2C<I2C: I2c> { i2c_bus, address });
+builder_functions!(DisplayOptionsI2C<I2C> { i2c_bus, address });
 
 impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 	DisplayOptions8Bit<M, C, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
@@ -257,6 +257,18 @@ impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D4, D5, D6, D7>
 			d5,
 			d6,
 			d7,
+		}
+	}
+}
+
+impl<M: DisplayMemoryMap, C: CharsetWithFallback, I2C> DisplayOptionsI2C<M, C, I2C> {
+	pub fn with_i2c_bus<I2C2>(self, i2c_bus: I2C2, address: u8) -> DisplayOptionsI2C<M, C, I2C2> {
+		DisplayOptionsI2C {
+			memory_map: self.memory_map,
+			charset: self.charset,
+			entry_mode: EntryMode::default(),
+			i2c_bus,
+			address,
 		}
 	}
 }
