@@ -1,3 +1,5 @@
+use core::ops::{Deref, DerefMut};
+
 pub trait Charset {
 	fn code_from_utf8(&self, ch: char) -> Option<u8>;
 }
@@ -10,6 +12,30 @@ pub struct Fallback<C: Charset, const FB: u8>(C);
 
 pub type EmptyFallback<C> = Fallback<C, b' '>;
 pub type QuestionFallback<C> = Fallback<C, b'?'>;
+
+impl<C: Charset, const FB: u8> Fallback<C, FB> {
+	pub const fn new(c: C) -> Self {
+		Self(c)
+	}
+
+	pub fn into_inner(self) -> C {
+		self.0
+	}
+}
+
+impl<C: Charset, const FB: u8> Deref for Fallback<C, FB> {
+	type Target = C;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<C: Charset, const FB: u8> DerefMut for Fallback<C, FB> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
+	}
+}
 
 impl<C: Charset, const FB: u8> CharsetWithFallback for Fallback<C, FB> {
 	fn code_from_utf8_with_fallback(&self, ch: char) -> u8 {
@@ -63,7 +89,7 @@ impl Charset for CharsetA00 {
 			'\u{ff01}' => Some(b'!'), // ！ full-width exclamation mark
 			'\u{ff1f}' => Some(b'?'), // ！ full-width exclamation mark
 			// Upper (Japanese)
-			'\u{3000}' => Some(0xA0),              // full-width space
+			// A0: Empty
 			'\u{3002}' => Some(0xA1),              // 。 Kuten
 			'\u{300c}' => Some(0xA2),              // 「 Quotation Marks
 			'\u{300d}' => Some(0xA3),              // 」
@@ -137,9 +163,9 @@ impl Charset for CharsetA00 {
 			'\u{03c1}' => Some(0xE6), // ρ Small Rho
 			// E7: Small G (tall version)
 			'\u{221a}' => Some(0xE8), // √ Square Root
-			// E9: Unknown
+			// E9: Superscript -1 (has no unicode character)
 			// EA: Small J (tall version)
-			// EB: Unknown
+			// EB: Superscript Small X (has no unicode character)
 			'\u{00a2}' => Some(0xEC), // ¢ Cent
 			'\u{2c60}' => Some(0xED), // Ⱡ Capital L with Double Bar
 			'\u{00f1}' => Some(0xEE), // ñ Small N with Tilde
@@ -152,7 +178,7 @@ impl Charset for CharsetA00 {
 			'\u{00fc}' => Some(0xF5), // ü Small U with Diaeresis
 			'\u{03a3}' => Some(0xF6), // Σ Capital Sigma
 			'\u{03c0}' => Some(0xF7), // π Small Pi
-			// F8: X-Bar (has no unicode character)
+			// F8: Small X-Bar (has no unicode character)
 			// F9: Small Y (tall version)
 			'\u{5343}' => Some(0xFA), // 千 Sen (1,000)
 			'\u{4E07}' => Some(0xFB), // 万 Man (10,000)
@@ -160,6 +186,8 @@ impl Charset for CharsetA00 {
 			'\u{00f7}' => Some(0xFD), // ÷ Division
 			// FE: Empty
 			'\u{2588}' => Some(0xFF), // █ Full Block
+			// Unmatched
+			ch if ch.is_whitespace() => Some(b' '), // full-width space
 			_ => None,
 		}
 	}
