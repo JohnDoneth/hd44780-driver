@@ -1,5 +1,3 @@
-use core::convert::Infallible;
-
 #[derive(Debug)]
 pub enum Error<IoE> {
 	/// Error related to IO of the MCU.
@@ -15,13 +13,6 @@ pub enum Error<IoE> {
 impl<E> Error<E> {
 	pub(crate) const fn wrap_io(port: Port) -> impl FnOnce(E) -> Self {
 		move |error| Self::Io { port, error }
-	}
-
-	pub(crate) const fn from_non_io(error: Error<Infallible>) -> Self {
-		match error {
-			Error::Io { .. } => unreachable!(), // error is Infallible, which has no variants by definition
-			Error::Position { position, size } => Self::Position { position, size },
-		}
 	}
 }
 

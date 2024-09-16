@@ -4,13 +4,19 @@ use embedded_hal::digital::{self, OutputPin};
 use crate::bus::DataBus;
 use crate::error::{Error, Port, Result};
 
+#[derive(Debug, Clone, Copy)]
+pub struct FourBitBusPins<RS, EN, D4, D5, D6, D7> {
+	pub rs: RS,
+	pub en: EN,
+	pub d4: D4,
+	pub d5: D5,
+	pub d6: D6,
+	pub d7: D7,
+}
+
+#[derive(Debug)]
 pub struct FourBitBus<RS: OutputPin, EN: OutputPin, D4: OutputPin, D5: OutputPin, D6: OutputPin, D7: OutputPin> {
-	rs: RS,
-	en: EN,
-	d4: D4,
-	d5: D5,
-	d6: D6,
-	d7: D7,
+	pins: FourBitBusPins<RS, EN, D4, D5, D6, D7>,
 }
 
 impl<
@@ -23,12 +29,12 @@ impl<
 		E,
 	> FourBitBus<RS, EN, D4, D5, D6, D7>
 {
-	pub fn from_pins(rs: RS, en: EN, d4: D4, d5: D5, d6: D6, d7: D7) -> FourBitBus<RS, EN, D4, D5, D6, D7> {
-		FourBitBus { rs, en, d4, d5, d6, d7 }
+	pub fn from_pins(pins: FourBitBusPins<RS, EN, D4, D5, D6, D7>) -> FourBitBus<RS, EN, D4, D5, D6, D7> {
+		FourBitBus { pins }
 	}
 
-	pub fn destroy(self) -> (RS, EN, D4, D5, D6, D7) {
-		(self.rs, self.en, self.d4, self.d5, self.d6, self.d7)
+	pub fn destroy(self) -> FourBitBusPins<RS, EN, D4, D5, D6, D7> {
+		self.pins
 	}
 
 	fn write_lower_nibble(&mut self, data: u8) -> Result<(), E> {
@@ -37,10 +43,10 @@ impl<
 		let db2: bool = (0b0000_0100 & data) != 0;
 		let db3: bool = (0b0000_1000 & data) != 0;
 
-		self.d4.set_state(db0.into()).map_err(Error::wrap_io(Port::D4))?;
-		self.d5.set_state(db1.into()).map_err(Error::wrap_io(Port::D5))?;
-		self.d6.set_state(db2.into()).map_err(Error::wrap_io(Port::D6))?;
-		self.d7.set_state(db3.into()).map_err(Error::wrap_io(Port::D7))?;
+		self.pins.d4.set_state(db0.into()).map_err(Error::wrap_io(Port::D4))?;
+		self.pins.d5.set_state(db1.into()).map_err(Error::wrap_io(Port::D5))?;
+		self.pins.d6.set_state(db2.into()).map_err(Error::wrap_io(Port::D6))?;
+		self.pins.d7.set_state(db3.into()).map_err(Error::wrap_io(Port::D7))?;
 
 		Ok(())
 	}
@@ -51,10 +57,10 @@ impl<
 		let db6: bool = (0b0100_0000 & data) != 0;
 		let db7: bool = (0b1000_0000 & data) != 0;
 
-		self.d4.set_state(db4.into()).map_err(Error::wrap_io(Port::D4))?;
-		self.d5.set_state(db5.into()).map_err(Error::wrap_io(Port::D5))?;
-		self.d6.set_state(db6.into()).map_err(Error::wrap_io(Port::D6))?;
-		self.d7.set_state(db7.into()).map_err(Error::wrap_io(Port::D7))?;
+		self.pins.d4.set_state(db4.into()).map_err(Error::wrap_io(Port::D4))?;
+		self.pins.d5.set_state(db5.into()).map_err(Error::wrap_io(Port::D5))?;
+		self.pins.d6.set_state(db6.into()).map_err(Error::wrap_io(Port::D6))?;
+		self.pins.d7.set_state(db7.into()).map_err(Error::wrap_io(Port::D7))?;
 
 		Ok(())
 	}
@@ -73,24 +79,24 @@ impl<
 	type Error = E;
 
 	fn write<D: DelayNs>(&mut self, byte: u8, data: bool, delay: &mut D) -> Result<(), Self::Error> {
-		self.rs.set_state(data.into()).map_err(Error::wrap_io(Port::RS))?;
+		self.pins.rs.set_state(data.into()).map_err(Error::wrap_io(Port::RS))?;
 
 		self.write_upper_nibble(byte)?;
 
 		// Pulse the enable pin to recieve the upper nibble
-		self.en.set_high().map_err(Error::wrap_io(Port::EN))?;
+		self.pins.en.set_high().map_err(Error::wrap_io(Port::EN))?;
 		delay.delay_ms(2u32);
-		self.en.set_low().map_err(Error::wrap_io(Port::EN))?;
+		self.pins.en.set_low().map_err(Error::wrap_io(Port::EN))?;
 
 		self.write_lower_nibble(byte)?;
 
 		// Pulse the enable pin to recieve the lower nibble
-		self.en.set_high().map_err(Error::wrap_io(Port::EN))?;
+		self.pins.en.set_high().map_err(Error::wrap_io(Port::EN))?;
 		delay.delay_ms(2u32);
-		self.en.set_low().map_err(Error::wrap_io(Port::EN))?;
+		self.pins.en.set_low().map_err(Error::wrap_io(Port::EN))?;
 
 		if data {
-			self.rs.set_low().map_err(Error::wrap_io(Port::RS))?;
+			self.pins.rs.set_low().map_err(Error::wrap_io(Port::RS))?;
 		}
 
 		Ok(())

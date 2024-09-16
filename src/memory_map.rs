@@ -27,6 +27,12 @@ impl<const W: u8, const H: u8, const L: u8> StandardMemoryMap<W, H, L> {
 	}
 }
 
+impl<const W: u8, const H: u8, const L: u8> Default for StandardMemoryMap<W, H, L> {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
 impl<const W: u8, const H: u8, const L: u8> DisplayMemoryMap for StandardMemoryMap<W, H, L> {
 	/// Address of a character in a row assuming the most common memory mapping.
 	///
@@ -69,8 +75,14 @@ const fn scrollable_margin(w: u8, h: u8, l: u8) -> u8 {
 pub struct Contiguous1RMemoryMap<const WIDTH: u8, const LINE_WIDTH: u8 = 0x50>;
 
 impl<const W: u8, const L: u8> Contiguous1RMemoryMap<W, L> {
-	pub fn new() -> Self {
+	pub const fn new() -> Self {
 		Self
+	}
+}
+
+impl<const W: u8, const L: u8> Default for Contiguous1RMemoryMap<W, L> {
+	fn default() -> Self {
+		Self::new()
 	}
 }
 

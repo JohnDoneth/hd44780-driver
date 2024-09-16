@@ -3,9 +3,10 @@ use embedded_hal::{
 	digital::{self, OutputPin},
 	i2c::I2c,
 };
+use sealed::SealedDisplayOptions;
 
 use crate::{
-	bus::{DataBus, EightBitBus, FourBitBus, I2CBus},
+	bus::{DataBus, EightBitBus, EightBitBusPins, FourBitBus, FourBitBusPins, I2CBus},
 	charset::{CharsetUniversal, CharsetWithFallback, EmptyFallback},
 	entry_mode::EntryMode,
 	error::Error,
@@ -13,23 +14,35 @@ use crate::{
 	DisplayMode, HD44780,
 };
 
-mod sealed {
+pub(crate) mod sealed {
 	use embedded_hal::delay::DelayNs;
 
-	use crate::{bus::DataBus, charset::CharsetWithFallback, error::Error, memory_map::DisplayMemoryMap, HD44780};
+	use crate::{bus::DataBus, charset::CharsetWithFallback, memory_map::DisplayMemoryMap};
 
+	use super::DisplayOptionsResult;
+
+	/// Marker used to restrict access to internal sealed trait funcitons.
+	#[doc(hidden)]
+	pub struct Internal;
+
+	#[doc(hidden)]
 	pub trait SealedDisplayOptions: Sized {
 		type Bus: DataBus;
 		type MemoryMap: DisplayMemoryMap;
 		type Charset: CharsetWithFallback;
 		type IoError: core::fmt::Debug;
 
-		fn new_display<D: DelayNs>(
-			self,
-			delay: &mut D,
-		) -> Result<HD44780<Self::Bus, Self::MemoryMap, Self::Charset>, (Self, Error<Self::IoError>)>;
+		fn new_display<D: DelayNs>(self, delay: &mut D, _: Internal) -> DisplayOptionsResult<Self>;
 	}
 }
+
+type HD44780FromOptions<Options> = HD44780<
+	<Options as SealedDisplayOptions>::Bus,
+	<Options as SealedDisplayOptions>::MemoryMap,
+	<Options as SealedDisplayOptions>::Charset,
+>;
+type DisplayOptionsResult<Options> =
+	Result<HD44780FromOptions<Options>, (Options, Error<<Options as SealedDisplayOptions>::IoError>)>;
 
 /// Use this as an argument to [`HD44780::new`].
 /// - [`DisplayOptionsI2C`]
@@ -48,16 +61,7 @@ pub struct DisplayOptions8Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, E
 	/// The character set this display uses.
 	pub charset: C,
 	pub entry_mode: EntryMode,
-	pub rs: RS,
-	pub en: EN,
-	pub d0: D0,
-	pub d1: D1,
-	pub d2: D2,
-	pub d3: D3,
-	pub d4: D4,
-	pub d5: D5,
-	pub d6: D6,
-	pub d7: D7,
+	pub pins: EightBitBusPins<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -67,12 +71,7 @@ pub struct DisplayOptions4Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, E
 	/// The character set this display uses.
 	pub charset: C,
 	pub entry_mode: EntryMode,
-	pub rs: RS,
-	pub en: EN,
-	pub d4: D4,
-	pub d5: D5,
-	pub d6: D6,
-	pub d7: D7,
+	pub pins: FourBitBusPins<RS, EN, D4, D5, D6, D7>,
 }
 
 pub struct DisplayOptionsI2C<M: DisplayMemoryMap, C: CharsetWithFallback, I2C> {
@@ -106,16 +105,18 @@ impl<M: DisplayMemoryMap>
 			memory_map,
 			charset: CharsetUniversal::EMPTY_FALLBACK,
 			entry_mode: EntryMode::default(),
-			rs: Unspecified,
-			en: Unspecified,
-			d0: Unspecified,
-			d1: Unspecified,
-			d2: Unspecified,
-			d3: Unspecified,
-			d4: Unspecified,
-			d5: Unspecified,
-			d6: Unspecified,
-			d7: Unspecified,
+			pins: EightBitBusPins {
+				rs: Unspecified,
+				en: Unspecified,
+				d0: Unspecified,
+				d1: Unspecified,
+				d2: Unspecified,
+				d3: Unspecified,
+				d4: Unspecified,
+				d5: Unspecified,
+				d6: Unspecified,
+				d7: Unspecified,
+			},
 		}
 	}
 }
@@ -137,12 +138,14 @@ impl<M: DisplayMemoryMap>
 			memory_map,
 			charset: CharsetUniversal::EMPTY_FALLBACK,
 			entry_mode: EntryMode::default(),
-			rs: Unspecified,
-			en: Unspecified,
-			d4: Unspecified,
-			d5: Unspecified,
-			d6: Unspecified,
-			d7: Unspecified,
+			pins: FourBitBusPins {
+				rs: Unspecified,
+				en: Unspecified,
+				d4: Unspecified,
+				d5: Unspecified,
+				d6: Unspecified,
+				d7: Unspecified,
+			},
 		}
 	}
 }
@@ -185,8 +188,8 @@ macro_rules! builder_functions {
 	};
 }
 
-builder_functions!(DisplayOptions8Bit<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7> { rs, en, d0, d1, d2, d3, d4, d5, d6, d7 });
-builder_functions!(DisplayOptions4Bit<RS, EN, D4, D5, D6, D7> { rs, en, d4, d5, d6, d7 });
+builder_functions!(DisplayOptions8Bit < RS, EN, D0, D1, D2, D3, D4, D5, D6, D7 > { pins });
+builder_functions!(DisplayOptions4Bit < RS, EN, D4, D5, D6, D7 > { pins });
 builder_functions!(DisplayOptionsI2C<I2C> { i2c_bus, address });
 
 impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
@@ -200,32 +203,9 @@ impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D0, D1, D2, D3, D4, D5
 	/// is data on the 8 data pins and that it should read them in.
 	pub fn with_pins<RS2, EN2, D02, D12, D22, D32, D42, D52, D62, D72>(
 		self,
-		rs: RS2,
-		en: EN2,
-		d0: D02,
-		d1: D12,
-		d2: D22,
-		d3: D32,
-		d4: D42,
-		d5: D52,
-		d6: D62,
-		d7: D72,
+		pins: EightBitBusPins<RS2, EN2, D02, D12, D22, D32, D42, D52, D62, D72>,
 	) -> DisplayOptions8Bit<M, C, RS2, EN2, D02, D12, D22, D32, D42, D52, D62, D72> {
-		DisplayOptions8Bit {
-			memory_map: self.memory_map,
-			charset: self.charset,
-			entry_mode: self.entry_mode,
-			rs,
-			en,
-			d0,
-			d1,
-			d2,
-			d3,
-			d4,
-			d5,
-			d6,
-			d7,
-		}
+		DisplayOptions8Bit { memory_map: self.memory_map, charset: self.charset, entry_mode: self.entry_mode, pins }
 	}
 }
 
@@ -240,24 +220,9 @@ impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D4, D5, D6, D7>
 	/// is data on the 4 data pins and that it should read them in.
 	pub fn with_pins<RS2, EN2, D42, D52, D62, D72>(
 		self,
-		rs: RS2,
-		en: EN2,
-		d4: D42,
-		d5: D52,
-		d6: D62,
-		d7: D72,
+		pins: FourBitBusPins<RS2, EN2, D42, D52, D62, D72>,
 	) -> DisplayOptions4Bit<M, C, RS2, EN2, D42, D52, D62, D72> {
-		DisplayOptions4Bit {
-			memory_map: self.memory_map,
-			charset: self.charset,
-			entry_mode: self.entry_mode,
-			rs,
-			en,
-			d4,
-			d5,
-			d6,
-			d7,
-		}
+		DisplayOptions4Bit { memory_map: self.memory_map, charset: self.charset, entry_mode: self.entry_mode, pins }
 	}
 }
 
@@ -312,26 +277,11 @@ impl<
 	type Charset = C;
 	type IoError = E;
 
-	fn new_display<D: DelayNs>(
-		mut self,
-		delay: &mut D,
-	) -> Result<HD44780<Self::Bus, Self::MemoryMap, Self::Charset>, (Self, Error<Self::IoError>)> {
-		let mut bus = EightBitBus::from_pins(
-			self.rs, self.en, self.d0, self.d1, self.d2, self.d3, self.d4, self.d5, self.d6, self.d7,
-		);
+	fn new_display<D: DelayNs>(mut self, delay: &mut D, _: sealed::Internal) -> DisplayOptionsResult<Self> {
+		let mut bus = EightBitBus::from_pins(self.pins);
 
 		if let Err(error) = init_8bit(&mut bus, &self.entry_mode, delay) {
-			let pins = bus.destroy();
-			self.rs = pins.0;
-			self.en = pins.1;
-			self.d0 = pins.2;
-			self.d1 = pins.3;
-			self.d2 = pins.4;
-			self.d3 = pins.5;
-			self.d4 = pins.6;
-			self.d5 = pins.7;
-			self.d6 = pins.8;
-			self.d7 = pins.9;
+			self.pins = bus.destroy();
 			return Err((self, error));
 		}
 
@@ -376,20 +326,11 @@ impl<
 	type Charset = C;
 	type IoError = E;
 
-	fn new_display<D: DelayNs>(
-		mut self,
-		delay: &mut D,
-	) -> Result<HD44780<Self::Bus, Self::MemoryMap, Self::Charset>, (Self, Error<Self::IoError>)> {
-		let mut bus = FourBitBus::from_pins(self.rs, self.en, self.d4, self.d5, self.d6, self.d7);
+	fn new_display<D: DelayNs>(mut self, delay: &mut D, _: sealed::Internal) -> DisplayOptionsResult<Self> {
+		let mut bus = FourBitBus::from_pins(self.pins);
 
 		if let Err(error) = init_4bit(&mut bus, &self.entry_mode, delay) {
-			let pins = bus.destroy();
-			self.rs = pins.0;
-			self.en = pins.1;
-			self.d4 = pins.2;
-			self.d5 = pins.3;
-			self.d6 = pins.4;
-			self.d7 = pins.5;
+			self.pins = bus.destroy();
 			return Err((self, error));
 		}
 
@@ -413,10 +354,7 @@ impl<M: DisplayMemoryMap, C: CharsetWithFallback, I2C: I2c> sealed::SealedDispla
 	type Charset = C;
 	type IoError = I2C::Error;
 
-	fn new_display<D: DelayNs>(
-		mut self,
-		delay: &mut D,
-	) -> Result<HD44780<Self::Bus, Self::MemoryMap, Self::Charset>, (Self, Error<Self::IoError>)> {
+	fn new_display<D: DelayNs>(mut self, delay: &mut D, _: sealed::Internal) -> DisplayOptionsResult<Self> {
 		let mut bus = I2CBus::new(self.i2c_bus, self.address);
 
 		if let Err(error) = init_4bit(&mut bus, &self.entry_mode, delay) {

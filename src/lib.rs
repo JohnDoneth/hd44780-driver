@@ -2,8 +2,6 @@
 #![cfg_attr(feature = "async", feature(type_alias_impl_trait))]
 #![cfg_attr(feature = "async", feature(impl_trait_in_assoc_type))]
 
-use core::convert::Infallible;
-
 use charset::CharsetWithFallback;
 use display_size::DisplaySize;
 use embedded_hal::delay::DelayNs;
@@ -65,136 +63,6 @@ pub enum CursorBlink {
 	Off,
 }
 
-// impl<
-// 		M: DisplayMemoryMap,
-// 		C: CharsetWithFallback,
-// 		RS: OutputPin<Error = E>,
-// 		EN: OutputPin<Error = E>,
-// 		D0: OutputPin<Error = E>,
-// 		D1: OutputPin<Error = E>,
-// 		D2: OutputPin<Error = E>,
-// 		D3: OutputPin<Error = E>,
-// 		D4: OutputPin<Error = E>,
-// 		D5: OutputPin<Error = E>,
-// 		D6: OutputPin<Error = E>,
-// 		D7: OutputPin<Error = E>,
-// 		E: digital::Error,
-// 	> HD44780<EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>, M, C>
-// {
-// 	/// Create an instance of a `HD44780` from 8 data pins, a register select
-// 	/// pin, an enable pin and a struct implementing the delay trait.
-// 	/// - The delay instance is used to sleep between commands to
-// 	/// ensure the `HD44780` has enough time to process commands.
-// 	/// - The eight db0..db7 pins are used to send and recieve with
-// 	///  the `HD44780`.
-// 	/// - The register select pin is used to tell the `HD44780`
-// 	/// if incoming data is a command or data.
-// 	/// - The enable pin is used to tell the `HD44780` that there
-// 	/// is data on the 8 data pins and that it should read them in.
-// 	///
-// 	#[allow(clippy::type_complexity)]
-// 	pub fn new_8bit<D: DelayNs>(
-// 		rs: RS,
-// 		en: EN,
-// 		d0: D0,
-// 		d1: D1,
-// 		d2: D2,
-// 		d3: D3,
-// 		d4: D4,
-// 		d5: D5,
-// 		d6: D6,
-// 		d7: D7,
-// 		delay: &mut D,
-// 	) -> Result<HD44780<EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>, M, C>, E> {
-// 		let mut hd = HD44780 {
-// 			bus: EightBitBus::from_pins(rs, en, d0, d1, d2, d3, d4, d5, d6, d7),
-// 			entry_mode: EntryMode::default(),
-// 			display_mode: DisplayMode::default(),
-// 			display_size: DisplaySize::default(),
-// 		};
-
-// 		hd.init_8bit(delay)?;
-
-// 		Ok(hd)
-// 	}
-// }
-
-// impl<
-// 		RS: OutputPin<Error = E>,
-// 		EN: OutputPin<Error = E>,
-// 		D4: OutputPin<Error = E>,
-// 		D5: OutputPin<Error = E>,
-// 		D6: OutputPin<Error = E>,
-// 		D7: OutputPin<Error = E>,
-// 		E: digital::Error,
-// 	> HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>
-// {
-// 	/// Create an instance of a `HD44780` from 4 data pins, a register select
-// 	/// pin, an enable pin and a struct implementing the delay trait.
-// 	/// - The delay instance is used to sleep between commands to
-// 	/// ensure the `HD44780` has enough time to process commands.
-// 	/// - The four db0..db3 pins are used to send and recieve with
-// 	///  the `HD44780`.
-// 	/// - The register select pin is used to tell the `HD44780`
-// 	/// if incoming data is a command or data.
-// 	/// - The enable pin is used to tell the `HD44780` that there
-// 	/// is data on the 4 data pins and that it should read them in.
-// 	///
-// 	/// This mode operates differently than 8 bit mode by using 4 less
-// 	/// pins for data, which is nice on devices with less I/O although
-// 	/// the I/O takes a 'bit' longer
-// 	///
-// 	/// Instead of commands being sent byte by byte each command is
-// 	/// broken up into it's upper and lower nibbles (4 bits) before
-// 	/// being sent over the data bus
-// 	///
-// 	#[allow(clippy::type_complexity)]
-// 	pub fn new_4bit<D: DelayNs>(
-// 		rs: RS,
-// 		en: EN,
-// 		d4: D4,
-// 		d5: D5,
-// 		d6: D6,
-// 		d7: D7,
-// 		delay: &mut D,
-// 	) -> Result<HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>, E> {
-// 		let mut hd = HD44780 {
-// 			bus: FourBitBus::from_pins(rs, en, d4, d5, d6, d7),
-// 			entry_mode: EntryMode::default(),
-// 			display_mode: DisplayMode::default(),
-// 			display_size: DisplaySize::default(),
-// 		};
-
-// 		hd.init_4bit(delay)?;
-
-// 		Ok(hd)
-// 	}
-// }
-
-// impl<I2C: I2c> HD44780<I2CBus<I2C>> {
-// 	/// Create an instance of a `HD44780` from an i2c write peripheral,
-// 	/// the `HD44780` I2C address and a struct implementing the delay trait.
-// 	/// - The delay instance is used to sleep between commands to
-// 	/// ensure the `HD44780` has enough time to process commands.
-// 	/// - The i2c peripheral is used to send data to the `HD44780` and to set
-// 	/// its register select and enable pins.
-// 	///
-// 	/// This mode operates on an I2C bus, using an I2C to parallel port expander
-// 	///
-// 	pub fn new_i2c<D: DelayNs>(i2c_bus: I2C, address: u8, delay: &mut D) -> Result<HD44780<I2CBus<I2C>>, I2C::Error> {
-// 		let mut hd = HD44780 {
-// 			bus: I2CBus::new(i2c_bus, address),
-// 			entry_mode: EntryMode::default(),
-// 			display_mode: DisplayMode::default(),
-// 			display_size: DisplaySize::default(),
-// 		};
-
-// 		hd.init_4bit(delay)?;
-
-// 		Ok(hd)
-// 	}
-// }
-
 impl<B, M, C> HD44780<B, M, C>
 where
 	B: DataBus,
@@ -213,7 +81,7 @@ where
 	where
 		Opt: DisplayOptions<Bus = B, MemoryMap = M, Charset = C>,
 	{
-		options.new_display(delay)
+		options.new_display(delay, setup::sealed::Internal)
 	}
 
 	pub fn destroy(self) -> B {
