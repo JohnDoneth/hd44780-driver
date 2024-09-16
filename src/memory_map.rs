@@ -12,8 +12,8 @@ pub trait DisplayMemoryMap {
 	/// The address of a character on the display respecting the scrollable margin.
 	fn address_for_xy(&self, x: u8, y: u8) -> Option<u8>;
 
-	/// The width of a row including scrollable margin.
-	fn row_width(&self, y: u8) -> u8;
+	/// The columns of a line including scrollable margin.
+	fn columns_in_line(&self, y: u8) -> u8;
 
 	/// Size of the physical display.
 	fn display_size(&self) -> DisplaySize;
@@ -32,7 +32,7 @@ impl<const W: u8, const H: u8, const L: u8> DisplayMemoryMap for StandardMemoryM
 	///
 	/// See https://web.alfredstate.edu/faculty/weimandn/lcd/lcd_addressing/lcd_addressing_index.html
 	fn address_for_xy(&self, x: u8, y: u8) -> Option<u8> {
-		if y >= H || x >= self.row_width(y) {
+		if y >= H || x >= self.columns_in_line(y) {
 			return None;
 		}
 
@@ -46,7 +46,7 @@ impl<const W: u8, const H: u8, const L: u8> DisplayMemoryMap for StandardMemoryM
 		Some(addr)
 	}
 
-	fn row_width(&self, y: u8) -> u8 {
+	fn columns_in_line(&self, y: u8) -> u8 {
 		let scrollable: u8 = const { scrollable_margin(W, H, L) };
 		match H {
 			// Only rows 3 and 4 can scroll
@@ -79,14 +79,14 @@ impl<const W: u8, const L: u8> DisplayMemoryMap for Contiguous1RMemoryMap<W, L> 
 	///
 	/// See https://web.alfredstate.edu/faculty/weimandn/lcd/lcd_addressing/lcd_addressing_index.html
 	fn address_for_xy(&self, x: u8, y: u8) -> Option<u8> {
-		if y != 0 || x >= self.row_width(y) {
+		if y != 0 || x >= self.columns_in_line(y) {
 			None
 		} else {
 			Some(x)
 		}
 	}
 
-	fn row_width(&self, _y: u8) -> u8 {
+	fn columns_in_line(&self, _y: u8) -> u8 {
 		L
 	}
 
