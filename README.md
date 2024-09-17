@@ -18,7 +18,7 @@ Any platform that implements the [embedded-hal](https://github.com/rust-embedded
 
 ### Getting Started
 
-This library aims to keep it simple in that to get started all you will have to do is supply the `HD44780::new` function a bunch of pins from your platform that implement the `OutputPin` trait for [embedded-hal](https://github.com/rust-embedded/embedded-hal) as well as a struct that implements the delay traits `DelayUs<u16>`  and `DelayMs<u8>`.
+This library aims to keep it simple in that to get started all you will have to do is supply the `HD44780::new` function a bunch of pins from your platform that implement the `OutputPin` trait for [embedded-hal](https://github.com/rust-embedded/embedded-hal) as well as a struct that implements the delay traits `DelayUs<u16>` and `DelayMs<u8>`.
 
 ```rust
 // Pseudo-code: check the HAL crate for your specific device for exact code to get pins / delay
@@ -27,16 +27,20 @@ This library aims to keep it simple in that to get started all you will have to 
 
 let mut delay = Delay::new();
 
-let mut lcd = HD44780::new_4bit(
-    d4.into_push_pull_output(&mut port), // Register Select pin
-    d3.into_push_pull_output(&mut port), // Enable pin
+let mut lcd = HD44780::new(
+    DisplayOptions8Bit::new(MemoryMap1602::new())
+        .with_pins(FourBitBusPins {
+            rs: d4.into_push_pull_output(&mut port), // Register Select pin,
+            en: d3.into_push_pull_output(&mut port), // Enable pin,
 
-    d9.into_push_pull_output(&mut port),  // d4
-    d10.into_push_pull_output(&mut port), // d5
-    d11.into_push_pull_output(&mut port), // d6
-    d12.into_push_pull_output(&mut port), // d7
+            d4: d9.into_push_pull_output(&mut port),  // d4,
+            d5: d10.into_push_pull_output(&mut port), // d5,
+            d6: d11.into_push_pull_output(&mut port), // d6,
+            d7: d12.into_push_pull_output(&mut port), // d7,
+        }),
     &mut delay,
-);
+)
+.unwrap();
 
 // Unshift display and set cursor to 0
 lcd.reset(&mut delay);
@@ -48,7 +52,7 @@ lcd.clear(&mut delay);
 lcd.write_str("Hello, world!", &mut delay);
 
 // Move the cursor to the second line
-lcd.set_cursor_pos(40, &mut delay);
+lcd.set_cursor_xy((0, 1), &mut delay);
 
 // Display the following string on the second line
 lcd.write_str("I'm on line 2!", &mut delay);
@@ -57,9 +61,10 @@ lcd.write_str("I'm on line 2!", &mut delay);
 ### Async API
 
 The async API is similar to the sync API. The the major differences are that:
-- The async API requires the `async` feature to use.
-- The async API requires the nightly compiler because of use of unstable features.
-- The async API uses `embedded-hal-async` rather than `embedded-hal` traits.
+
+-   The async API requires the `async` feature to use.
+-   The async API requires the nightly compiler because of use of unstable features.
+-   The async API uses `embedded-hal-async` rather than `embedded-hal` traits.
 
 Embassy provides some implementations of these traits for some MCUs, and provides
 an executor that can execute futures. However, projects implementing `embedded-hal-async` traits,
@@ -68,17 +73,23 @@ executor and driver also implement `embedded-async-traits`.
 
 ```rust
 use hd44780_driver::non_blocking::HD44780;
+use hd44780_driver::setup::DisplayOptions8Bit;
+use hd44780_driver::memory_map::MemoryMap1602;
+use hd44780_driver::bus::FourBitBusPins;
 
 let mut delay = embassy::time::Delay::new();
 pin_mut!(delay);
 
-let mut display = HD44780::new_4bit(
-    rs,
-    en,
-    d4,
-    d5,
-    d6,
-    d7,
+let mut display = HD44780::new(
+    DisplayOptions8Bit::new(MemoryMap1602::new())
+        .with_pins(FourBitBusPins {
+            rs,
+            en,
+            d4,
+            d5,
+            d6,
+            d7,
+        }),
     delay.as_mut(),
 )
 .await
@@ -89,20 +100,22 @@ display.write_str(msg, delay.as_mut()).await;
 ```
 
 ### Features
-- 4-bit & 8-bit modes are supported
-- Support for i2c backpacks
-- Non-blocking API
+
+-   4-bit & 8-bit modes are supported
+-   Support for i2c backpacks
+-   Non-blocking API
 
 ### Todo
-- Busy flag support
-- A more user-friendly API with additional features
-- Custom characters
+
+-   Busy flag support
+-   A more user-friendly API with additional features
+-   Custom characters
 
 ### Contributing
 
-- Additional issues as well as pull-requests are welcome.
+-   Additional issues as well as pull-requests are welcome.
 
-- If you have a platform not yet covered in this repository that is supported by [embedded-hal](https://github.com/rust-embedded/embedded-hal), a pull-request of an example would be awesome!
+-   If you have a platform not yet covered in this repository that is supported by [embedded-hal](https://github.com/rust-embedded/embedded-hal), a pull-request of an example would be awesome!
 
 ### License
 
