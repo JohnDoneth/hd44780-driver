@@ -8,6 +8,7 @@ pub trait CharsetWithFallback {
 	fn code_from_utf8_with_fallback(&self, ch: char) -> u8;
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Fallback<C: Charset, const FB: u8>(C);
 
 pub type EmptyFallback<C> = Fallback<C, b' '>;
@@ -50,6 +51,7 @@ impl<T: CharsetWithFallback> Charset for T {
 }
 
 /// Symbols common to both A00 and A02 Charset.
+#[derive(Debug, Clone, Copy)]
 pub struct CharsetUniversal;
 
 impl CharsetUniversal {
@@ -70,6 +72,7 @@ impl Charset for CharsetUniversal {
 /// Japanese Standard Font Character Set.
 //
 /// For reference, see page 17 on [the Hitachi datasheet by Sparkfun](https://www.sparkfun.com/datasheets/LCD/HD44780.pdf).
+#[derive(Debug, Clone, Copy)]
 pub struct CharsetA00;
 
 impl CharsetA00 {
@@ -83,9 +86,10 @@ impl Charset for CharsetA00 {
 			// Lower (ASCII)
 			'¥' => Some(0x5C),
 			'\\' => None,
+			'\x10'..='\x1f' => None,
 			'\x00'..='\x7d' => Some(ch as u8),
-			'→' => Some(0x7E),
-			'←' => Some(0x7F),
+			'\u{2192}' => Some(0x7E), // →
+			'\u{2190}' => Some(0x7F), // ←
 			'\u{ff01}' => Some(b'!'), // ！ full-width exclamation mark
 			'\u{ff1f}' => Some(b'?'), // ！ full-width exclamation mark
 			// Upper (Japanese)
@@ -166,7 +170,7 @@ impl Charset for CharsetA00 {
 			// E9: Superscript -1 (has no unicode character)
 			// EA: Small J (tall version)
 			// EB: Superscript Small X (has no unicode character)
-			'\u{00a2}' => Some(0xEC), // ¢ Cent
+			'\u{00A2}' => Some(0xEC), // ¢ Cent
 			'\u{2c60}' => Some(0xED), // Ⱡ Capital L with Double Bar
 			'\u{00f1}' => Some(0xEE), // ñ Small N with Tilde
 			'\u{00f6}' => Some(0xEF), // ö Small O with Diaeresis
@@ -193,6 +197,96 @@ impl Charset for CharsetA00 {
 	}
 }
 
+/// European Standard Font Character Set.
+//
+/// For reference, see page 18 on [the Hitachi datasheet by Sparkfun](https://www.sparkfun.com/datasheets/LCD/HD44780.pdf).
+#[derive(Debug, Clone, Copy)]
 pub struct CharsetA02;
 
-// TODO: A02
+impl Charset for CharsetA02 {
+	fn code_from_utf8(&self, ch: char) -> Option<u8> {
+		match ch {
+			'\x00'..='\x0f' | '\x20'..='\x7e' => Some(ch as u8), // CGRAM + ASCII
+			// Latin-1 with exceptions
+			'\u{A8}' | '\u{AC}' | '\u{AD}' | '\u{AF}' | '\u{B4}' | '\u{B8}' | '\u{D8}' | '\u{F8}' => None,
+			'\u{A1}'..='\u{FF}' => Some(ch as u8), // Latin-1 Supplement
+			// Lower
+			'\u{23F5}' => Some(0x00), // ⏵
+			'\u{23F4}' => Some(0x01), // ⏴
+			'\u{201C}' => Some(0x02), // “
+			'\u{201D}' => Some(0x03), // ”
+			'\u{23EB}' => Some(0x04), // ⏫
+			'\u{23EC}' => Some(0x05), // ⏬
+			'\u{23FA}' => Some(0x06), // ⏺
+			'\u{21b2}' => Some(0x07), // ↲
+			'\u{2191}' => Some(0x08), // ↑
+			'\u{2193}' => Some(0x09), // ↓
+			'\u{2192}' => Some(0x0A), // →
+			'\u{2190}' => Some(0x0B), // ←
+			'\u{2264}' => Some(0x0C), // ≤
+			'\u{2265}' => Some(0x0D), // ≥
+			'\u{23F6}' => Some(0x0E), // ⏶
+			'\u{23F7}' => Some(0x0F), // ⏷
+			// Middle
+			'\u{2302}' => Some(0x7F), // ⌂
+			// Cyrillic
+			'\u{0410}' => Some(b'A'), // А
+			'\u{0411}' => Some(0x80), // Б
+			'\u{0412}' => Some(b'B'), // В
+			'\u{0413}' => Some(0x92), // Г
+			'\u{0414}' => Some(0x81), // Д
+			'\u{0415}' => Some(b'E'), // Е
+			'\u{0416}' => Some(0x82), // Ж
+			'\u{0417}' => Some(0x83), // З
+			'\u{0418}' => Some(0x84), // И
+			'\u{0419}' => Some(0x85), // Й
+			'\u{041A}' => Some(b'K'), // К
+			'\u{041B}' => Some(0x86), // Л
+			'\u{041C}' => Some(b'M'), // М
+			'\u{041D}' => Some(b'H'), // Н
+			'\u{041E}' => Some(b'O'), // О
+			'\u{041F}' => Some(0x87), // П
+			'\u{0420}' => Some(b'P'), // Р
+			'\u{0421}' => Some(b'C'), // С
+			'\u{0422}' => Some(b'T'), // Т
+			'\u{0423}' => Some(0x88), // У
+			//'\u{0424}' => None,     // Ф
+			'\u{0425}' => Some(b'X'), // Х
+			'\u{0426}' => Some(0x89), // Ц
+			'\u{0427}' => Some(0x8A), // Ч
+			'\u{0428}' => Some(0x8B), // Ш
+			'\u{0429}' => Some(0x8C), // Щ
+			'\u{042A}' => Some(0x8D), // Ъ
+			'\u{042B}' => Some(0x8E), // Ы
+			'\u{042C}' => Some(b'b'), // Ь
+			'\u{042D}' => Some(0x8F), // Э
+			'\u{042E}' => Some(0xAC), // Ю
+			'\u{042F}' => Some(0xAD), // Я
+			// Other
+			'\u{03B1}' => Some(0x90),  // α Small Alpha
+			'\u{266A}' => Some(0x91),  // ♪ Eighth Note
+			'\u{03C0}' => Some(0x93),  // π Small Pi
+			'\u{03A3}' => Some(0x94),  // Σ Capital Sigma
+			'\u{03C3}' => Some(0x95),  // σ Small Sigma
+			'\u{266C}' => Some(0x96),  // ♬ Beamed Sixteenth Notes
+			'\u{03C4}' => Some(0x97),  // τ Small Tau
+			'\u{1F514}' => Some(0x98), // 🔔 Bell
+			'\u{03F4}' => Some(0x99),  // ϴ Capital Theta
+			'\u{03A9}' => Some(0x9A),  // Ω Capital Omega
+			'\u{03B4}' => Some(0x9B),  // δ Small Delta
+			'\u{221e}' => Some(0x9C),  // ∞ Infinity
+			'\u{2665}' => Some(0x9D),  // ♥ Heart
+			'\u{03B5}' => Some(0x9E),  // ε Small Epsilon
+			'\u{2229}' => Some(0x9F),  // ∩ Intersection
+			'\u{23F8}' => Some(0xA0),  // ⏸ Double Vertical Bar
+			'\u{2A0D}' => Some(0xA8),  // ⨍ Finite Part Integral
+			// B4: Pt Symbol (has no unicode character)
+			'\u{03C9}' => Some(0xB8),  // ω Small Omega
+			'\u{0278}' => Some(0xD8),  // ɸ Small Phi
+			'\u{222E}' => Some(0xF8),  // ∮ Contour Integral
+			'\u{2018}' => Some(0xAF),  // ‘
+			'\u{2019}' => Some(b'\''), // ’
+			_ => None,
+		}
+	}
+}
