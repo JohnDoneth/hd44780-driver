@@ -203,6 +203,11 @@ impl Charset for CharsetA00 {
 #[derive(Debug, Clone, Copy)]
 pub struct CharsetA02;
 
+impl CharsetA02 {
+	pub const EMPTY_FALLBACK: EmptyFallback<Self> = Fallback(Self);
+	pub const QUESTION_FALLBACK: QuestionFallback<Self> = Fallback(Self);
+}
+
 impl Charset for CharsetA02 {
 	fn code_from_utf8(&self, ch: char) -> Option<u8> {
 		match ch {
