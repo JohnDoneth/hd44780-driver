@@ -27,7 +27,7 @@ pub mod display_size;
 
 pub use display_mode::DisplayMode;
 use memory_map::DisplayMemoryMap;
-use setup::DisplayOptions;
+use setup::blocking::DisplayOptions;
 
 /// Implementation of async functionality
 #[cfg(feature = "async")]
@@ -81,11 +81,15 @@ where
 	where
 		Opt: DisplayOptions<Bus = B, MemoryMap = M, Charset = C>,
 	{
-		options.new_display(delay, setup::sealed::Internal)
+		options.new_display(delay, sealed::Internal)
 	}
 
 	pub fn destroy(self) -> B {
 		self.bus
+	}
+
+	pub(crate) fn new_raw(bus: B, memory_map: M, charset: C, entry_mode: EntryMode, display_mode: DisplayMode) -> Self {
+		Self { bus, memory_map, charset, entry_mode, display_mode }
 	}
 
 	/// Unshifts the display and sets the cursor position to 0
@@ -188,10 +192,10 @@ where
 	///
 	/// ```rust,ignore
 	/// // Move right (Default) when a new character is written
-	/// lcd.set_cursor_mode(CursorMode::Right)
+	/// lcd.set_cursor_mode(CursorMode::Right);
 	///
 	/// // Move left when a new character is written
-	/// lcd.set_cursor_mode(CursorMode::Left)
+	/// lcd.set_cursor_mode(CursorMode::Left);
 	/// ```
 	pub fn set_cursor_mode<D: DelayNs>(&mut self, mode: CursorMode, delay: &mut D) -> Result<(), B::Error> {
 		self.entry_mode.cursor_mode = mode;
@@ -208,19 +212,19 @@ where
 	/// ```rust,ignore
 	/// // Move to the start of line 2
 	/// // for a 20 columns display
-	/// lcd.set_cursor_pos(40)
+	/// lcd.set_cursor_pos(40);
 	/// ```
 	pub fn set_cursor_pos<D: DelayNs>(&mut self, position: u8, delay: &mut D) -> Result<(), B::Error> {
-		let size = self.display_size().get();
-		let position = (position % size.0, position / size.0);
-		self.set_cursor_xy(position, delay)
+		let lower_7_bits = 0b0111_1111 & position;
+
+		self.write_command(0b1000_0000 | lower_7_bits, delay)
 	}
 
 	/// Set the cursor position
 	///
 	/// ```rust,ignore
 	/// // Move to the start of line 3
-	/// lcd.set_cursor_pos_xy(0,2)
+	/// lcd.set_cursor_pos_xy(0,2);
 	/// ```
 	pub fn set_cursor_xy<D: DelayNs>(&mut self, position: (u8, u8), delay: &mut D) -> Result<(), B::Error> {
 		let size = self.display_size().get();
@@ -356,3 +360,9 @@ where
 //        Ok(())
 //    }
 //}
+
+mod sealed {
+	/// Marker used to restrict access to internal sealed trait funcitons.
+	#[doc(hidden)]
+	pub struct Internal;
+}

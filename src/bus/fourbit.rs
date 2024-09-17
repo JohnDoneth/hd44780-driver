@@ -102,3 +102,62 @@ impl<
 		Ok(())
 	}
 }
+
+#[cfg(feature = "async")]
+mod non_blocking {
+	use core::future::Future;
+	use embedded_hal::digital::{self, OutputPin};
+	use embedded_hal_async::delay::DelayNs;
+
+	use crate::{
+		error::{Error, Port, Result},
+		non_blocking::bus::DataBus,
+	};
+
+	use super::FourBitBus;
+
+	impl<
+			RS: OutputPin<Error = E> + 'static,
+			EN: OutputPin<Error = E> + 'static,
+			D4: OutputPin<Error = E> + 'static,
+			D5: OutputPin<Error = E> + 'static,
+			D6: OutputPin<Error = E> + 'static,
+			D7: OutputPin<Error = E> + 'static,
+			E: digital::Error,
+		> DataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
+	{
+		type Error = E;
+
+		type WriteFuture<'a, D: 'a + DelayNs> = impl Future<Output = Result<(), Self::Error>> + 'a;
+
+		fn write<'a, D: DelayNs + 'a>(
+			&'a mut self,
+			byte: u8,
+			data: bool,
+			delay: &'a mut D,
+		) -> Self::WriteFuture<'a, D> {
+			async move {
+				self.pins.rs.set_state(data.into()).map_err(Error::wrap_io(Port::RS))?;
+
+				self.write_upper_nibble(byte)?;
+
+				// Pulse the enable pin to recieve the upper nibble
+				self.pins.en.set_high().map_err(Error::wrap_io(Port::EN))?;
+				delay.delay_ms(2).await;
+				self.pins.en.set_low().map_err(Error::wrap_io(Port::EN))?;
+
+				self.write_lower_nibble(byte)?;
+				// Pulse the enable pin to recieve the lower nibble
+				self.pins.en.set_high().map_err(Error::wrap_io(Port::EN))?;
+				delay.delay_ms(2).await;
+				self.pins.en.set_low().map_err(Error::wrap_io(Port::EN))?;
+
+				if data {
+					self.pins.rs.set_low().map_err(Error::wrap_io(Port::RS))?;
+				}
+
+				Ok(())
+			}
+		}
+	}
+}
