@@ -144,6 +144,11 @@ macro_rules! builder_functions {
 					$($fn: self.$fn),*
 				}
 			}
+
+			pub fn with_entry_mode(mut self, entry_mode: EntryMode) -> Self {
+				self.entry_mode = entry_mode;
+				self
+			}
 		}
 	};
 }
