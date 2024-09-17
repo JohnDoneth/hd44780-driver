@@ -1,13 +1,9 @@
 use core::future::Future;
 use embedded_hal_async::delay::DelayNs;
 
-mod eightbit;
-mod fourbit;
-mod i2c;
-
-pub use self::eightbit::EightBitBus;
-pub use self::fourbit::FourBitBus;
-pub use self::i2c::I2CBus;
+pub use crate::bus::I2CBus;
+pub use crate::bus::{EightBitBus, EightBitBusPins};
+pub use crate::bus::{FourBitBus, FourBitBusPins};
 
 use crate::error::Result;
 
