@@ -1,4 +1,5 @@
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct DisplaySize {
 	columns: u8,
 	lines: u8,

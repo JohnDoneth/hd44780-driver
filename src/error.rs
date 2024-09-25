@@ -29,6 +29,23 @@ impl<E: core::fmt::Debug> core::fmt::Display for Error<E> {
 	}
 }
 
+#[cfg(feature = "defmt")]
+impl<E: defmt::Format> defmt::Format for Error<E> {
+	fn format(&self, fmt: defmt::Formatter) {
+		match self {
+			Self::Io { port, error } => defmt::write!(fmt, "error on {:?}: {:?}", port, error),
+			Self::Position { position, size } => defmt::write!(
+				fmt,
+				"coordinates out of bounds: ({};{}) not fitting in a {}x{} display",
+				position.0,
+				position.1,
+				size.0,
+				size.1
+			),
+		}
+	}
+}
+
 impl<E: core::error::Error + 'static> core::error::Error for Error<E> {
 	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
 		match self {
@@ -41,6 +58,7 @@ impl<E: core::error::Error + 'static> core::error::Error for Error<E> {
 pub type Result<T, E> = core::result::Result<T, Error<E>>;
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Port {
 	/// Pin `D0` of an [EightBitBus][`crate::bus::EightBitBus`].
 	D0,
