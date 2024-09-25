@@ -4,7 +4,6 @@
 use bsp::entry;
 use defmt::*;
 use defmt_rtt as _;
-use embedded_hal::digital::OutputPin;
 use hd44780_driver::{memory_map::MemoryMap1602, setup::DisplayOptionsI2C, HD44780};
 use panic_probe as _;
 
@@ -49,9 +48,6 @@ fn main() -> ! {
 	let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
 
 	let pins = bsp::Pins::new(pac.IO_BANK0, pac.PADS_BANK0, sio.gpio_bank0, &mut pac.RESETS);
-
-	let mut led_pin = pins.led.into_push_pull_output();
-	led_pin.set_high().unwrap();
 
 	// Reconfigure pins for I2C
 	let sda: Gp18I2C1Sda = pins.gpio18.reconfigure();
