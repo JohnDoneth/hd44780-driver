@@ -2,7 +2,7 @@
 
 To run any example, pass the example name (`src/bin/<name>.rs`):
 
-```rs
+```sh
 cargo run --release --bin <name>
 ```
 

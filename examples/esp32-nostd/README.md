@@ -2,7 +2,7 @@
 
 To run any example, pass the example name (`src/bin/<name>.rs`) to espflash:
 
-```rs
+```sh
 cargo espflash flash --monitor --release --bin <name>
 ```
 
