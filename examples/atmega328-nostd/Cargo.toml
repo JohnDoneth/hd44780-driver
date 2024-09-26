@@ -1,0 +1,27 @@
+[package]
+edition = "2021"
+name = "atmega328-nostd"
+version = "0.1.0"
+
+[dependencies]
+hd44780-driver = { path = "../..", features = ["ufmt"] }
+avr-device = { version = "0.6", features = ["atmega328p"] }
+panic-halt = "0.2.0"
+ufmt = "0.2.0"
+nb = "1.1.0"
+embedded-hal = "1.0"
+arduino-hal = { git = "https://github.com/Rahix/avr-hal.git", features = [
+    "arduino-nano",
+] }
+
+[profile.dev]
+panic = "abort"
+lto = true
+opt-level = "s"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+debug = true
+lto = true
+opt-level = "s"
