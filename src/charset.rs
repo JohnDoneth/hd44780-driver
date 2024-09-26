@@ -10,6 +10,7 @@ pub trait CharsetWithFallback {
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "ufmt", derive(ufmt::derive::uDebug))]
 pub struct Fallback<C: Charset, const FB: u8>(C);
 
 pub type EmptyFallback<C> = Fallback<C, b' '>;
@@ -54,6 +55,7 @@ impl<T: CharsetWithFallback> Charset for T {
 /// Symbols common to both A00 and A02 Charset.
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "ufmt", derive(ufmt::derive::uDebug))]
 pub struct CharsetUniversal;
 
 impl CharsetUniversal {
@@ -76,6 +78,7 @@ impl Charset for CharsetUniversal {
 /// For reference, see page 17 on [the Hitachi datasheet by Sparkfun](https://www.sparkfun.com/datasheets/LCD/HD44780.pdf).
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "ufmt", derive(ufmt::derive::uDebug))]
 pub struct CharsetA00;
 
 impl CharsetA00 {

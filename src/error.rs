@@ -46,6 +46,26 @@ impl<E: defmt::Format> defmt::Format for Error<E> {
 	}
 }
 
+#[cfg(feature = "ufmt")]
+impl<E: ufmt::uDebug> ufmt::uDisplay for Error<E> {
+	fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> core::result::Result<(), W::Error>
+	where
+		W: ufmt::uWrite + ?Sized,
+	{
+		match self {
+			Self::Io { port, error } => ufmt::uwrite!(f, "error on {:?}: {:?}", port, error),
+			Self::Position { position, size } => ufmt::uwrite!(
+				f,
+				"coordinates out of bounds: ({};{}) not fitting in a {}x{} display",
+				position.0,
+				position.1,
+				size.0,
+				size.1
+			),
+		}
+	}
+}
+
 impl<E: core::error::Error + 'static> core::error::Error for Error<E> {
 	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
 		match self {
@@ -59,6 +79,7 @@ pub type Result<T, E> = core::result::Result<T, Error<E>>;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "ufmt", derive(ufmt::derive::uDebug))]
 pub enum Port {
 	/// Pin `D0` of an [EightBitBus][`crate::bus::EightBitBus`].
 	D0,
