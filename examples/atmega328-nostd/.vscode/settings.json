@@ -1,0 +1,4 @@
+{
+    "rust-analyzer.cargo.target": "avr-unknown-gnu-atmega328",
+    "rust-analyzer.checkOnSave.allTargets": false
+}

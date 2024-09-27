@@ -1,0 +1,16 @@
+[target.'cfg(target_arch = "avr")']
+runner = "./flash.sh"
+rustflags = [
+  # Code-size optimizations.
+  #   trap unreachable can save a lot of space, but requires nightly compiler.
+  "-Z",
+  "trap-unreachable=no",
+  "-C",
+  "no-vectorize-loops",
+]
+
+[unstable]
+build-std = ["core"]
+
+[build]
+target = "avr-unknown-gnu-atmega328"

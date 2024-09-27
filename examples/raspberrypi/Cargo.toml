@@ -1,8 +1,0 @@
-[package]
-name = "raspberrypi-hd44780-example"
-version = "0.2.0"
-authors = ["John Doneth <Doneth7@gmail.com>"]
-
-[dependencies]
-linux-embedded-hal = "0.2"
-hd44780-driver = { path = "../.." }

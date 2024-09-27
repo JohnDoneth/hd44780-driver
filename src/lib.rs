@@ -2,15 +2,12 @@
 #![cfg_attr(feature = "async", feature(type_alias_impl_trait))]
 #![cfg_attr(feature = "async", feature(impl_trait_in_assoc_type))]
 
-use core::convert::Infallible;
-
+use charset::CharsetWithFallback;
 use display_size::DisplaySize;
-use embedded_hal::digital::OutputPin;
-use embedded_hal::i2c::I2c;
-use embedded_hal::{delay::DelayNs, digital};
+use embedded_hal::delay::DelayNs;
 
 pub mod bus;
-use bus::{DataBus, EightBitBus, FourBitBus, I2CBus};
+use bus::DataBus;
 
 pub mod error;
 use error::{Error, Result};
@@ -19,20 +16,29 @@ pub mod entry_mode;
 
 use entry_mode::{CursorMode, EntryMode};
 
+pub mod setup;
+
+pub mod charset;
+
+pub mod memory_map;
+
 pub mod display_mode;
 pub mod display_size;
 
 pub use display_mode::DisplayMode;
+use memory_map::DisplayMemoryMap;
+use setup::blocking::DisplayOptions;
 
 /// Implementation of async functionality
 #[cfg(feature = "async")]
 pub mod non_blocking;
 
-pub struct HD44780<B: DataBus> {
+pub struct HD44780<B: DataBus, M: DisplayMemoryMap, C: CharsetWithFallback> {
 	bus: B,
+	memory_map: M,
+	charset: C,
 	entry_mode: EntryMode,
 	display_mode: DisplayMode,
-	display_size: DisplaySize,
 }
 
 /// Used in the direction argument for shifting the cursor and the display
@@ -57,162 +63,35 @@ pub enum CursorBlink {
 	Off,
 }
 
-impl<
-		RS: OutputPin<Error = E>,
-		EN: OutputPin<Error = E>,
-		D0: OutputPin<Error = E>,
-		D1: OutputPin<Error = E>,
-		D2: OutputPin<Error = E>,
-		D3: OutputPin<Error = E>,
-		D4: OutputPin<Error = E>,
-		D5: OutputPin<Error = E>,
-		D6: OutputPin<Error = E>,
-		D7: OutputPin<Error = E>,
-		E: digital::Error,
-	> HD44780<EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>>
-{
-	/// Create an instance of a `HD44780` from 8 data pins, a register select
-	/// pin, an enable pin and a struct implementing the delay trait.
-	/// - The delay instance is used to sleep between commands to
-	/// ensure the `HD44780` has enough time to process commands.
-	/// - The eight db0..db7 pins are used to send and recieve with
-	///  the `HD44780`.
-	/// - The register select pin is used to tell the `HD44780`
-	/// if incoming data is a command or data.
-	/// - The enable pin is used to tell the `HD44780` that there
-	/// is data on the 8 data pins and that it should read them in.
-	///
-	#[allow(clippy::too_many_arguments)]
-	#[allow(clippy::type_complexity)]
-	pub fn new_8bit<D: DelayNs>(
-		rs: RS,
-		en: EN,
-		d0: D0,
-		d1: D1,
-		d2: D2,
-		d3: D3,
-		d4: D4,
-		d5: D5,
-		d6: D6,
-		d7: D7,
-		delay: &mut D,
-	) -> Result<HD44780<EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>>, E> {
-		let mut hd = HD44780 {
-			bus: EightBitBus::from_pins(rs, en, d0, d1, d2, d3, d4, d5, d6, d7),
-			entry_mode: EntryMode::default(),
-			display_mode: DisplayMode::default(),
-			display_size: DisplaySize::default(),
-		};
-
-		hd.init_8bit(delay)?;
-
-		Ok(hd)
-	}
-}
-
-/// Gets the one-dimensional HD44780 coordinate for position (x, y) (zero-based)
-///
-/// https://web.alfredstate.edu/faculty/weimandn/lcd/lcd_addressing/lcd_addressing_index.html
-/// Assumes type-2 addressing for 16x1 displays
-pub fn get_position(position: (u8, u8), size: (u8, u8)) -> Result<u8, Infallible> {
-	if (position.0 >= size.0) || (position.1 >= size.1) {
-		return Err(Error::Position { position, size });
-	}
-
-	let mut addr = position.0 & 0x3f;
-	if (position.1 & 1) == 1 {
-		addr += 0x40;
-	}
-	if (position.1 & 2) == 2 {
-		addr += size.0;
-	}
-	Ok(addr)
-}
-
-fn get_position_generic<E>(position: (u8, u8), size: (u8, u8)) -> Result<u8, E> {
-	get_position(position, size).map_err(Error::from_non_io)
-}
-
-impl<
-		RS: OutputPin<Error = E>,
-		EN: OutputPin<Error = E>,
-		D4: OutputPin<Error = E>,
-		D5: OutputPin<Error = E>,
-		D6: OutputPin<Error = E>,
-		D7: OutputPin<Error = E>,
-		E: digital::Error,
-	> HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>
-{
-	/// Create an instance of a `HD44780` from 4 data pins, a register select
-	/// pin, an enable pin and a struct implementing the delay trait.
-	/// - The delay instance is used to sleep between commands to
-	/// ensure the `HD44780` has enough time to process commands.
-	/// - The four db0..db3 pins are used to send and recieve with
-	///  the `HD44780`.
-	/// - The register select pin is used to tell the `HD44780`
-	/// if incoming data is a command or data.
-	/// - The enable pin is used to tell the `HD44780` that there
-	/// is data on the 4 data pins and that it should read them in.
-	///
-	/// This mode operates differently than 8 bit mode by using 4 less
-	/// pins for data, which is nice on devices with less I/O although
-	/// the I/O takes a 'bit' longer
-	///
-	/// Instead of commands being sent byte by byte each command is
-	/// broken up into it's upper and lower nibbles (4 bits) before
-	/// being sent over the data bus
-	///
-	#[allow(clippy::type_complexity)]
-	pub fn new_4bit<D: DelayNs>(
-		rs: RS,
-		en: EN,
-		d4: D4,
-		d5: D5,
-		d6: D6,
-		d7: D7,
-		delay: &mut D,
-	) -> Result<HD44780<FourBitBus<RS, EN, D4, D5, D6, D7>>, E> {
-		let mut hd = HD44780 {
-			bus: FourBitBus::from_pins(rs, en, d4, d5, d6, d7),
-			entry_mode: EntryMode::default(),
-			display_mode: DisplayMode::default(),
-			display_size: DisplaySize::default(),
-		};
-
-		hd.init_4bit(delay)?;
-
-		Ok(hd)
-	}
-}
-
-impl<I2C: I2c> HD44780<I2CBus<I2C>> {
-	/// Create an instance of a `HD44780` from an i2c write peripheral,
-	/// the `HD44780` I2C address and a struct implementing the delay trait.
-	/// - The delay instance is used to sleep between commands to
-	/// ensure the `HD44780` has enough time to process commands.
-	/// - The i2c peripheral is used to send data to the `HD44780` and to set
-	/// its register select and enable pins.
-	///
-	/// This mode operates on an I2C bus, using an I2C to parallel port expander
-	///
-	pub fn new_i2c<D: DelayNs>(i2c_bus: I2C, address: u8, delay: &mut D) -> Result<HD44780<I2CBus<I2C>>, I2C::Error> {
-		let mut hd = HD44780 {
-			bus: I2CBus::new(i2c_bus, address),
-			entry_mode: EntryMode::default(),
-			display_mode: DisplayMode::default(),
-			display_size: DisplaySize::default(),
-		};
-
-		hd.init_4bit(delay)?;
-
-		Ok(hd)
-	}
-}
-
-impl<B> HD44780<B>
+impl<B, M, C> HD44780<B, M, C>
 where
 	B: DataBus,
+	M: DisplayMemoryMap,
+	C: CharsetWithFallback,
 {
+	/// Create an instance of a `HD44780` using a struct implementing
+	/// the delay trait.
+	/// The delay instance is used to sleep between commands to
+	/// ensure the `HD44780` has enough time to process commands.
+	///
+	/// If there was an error when setting up the display, the settings
+	/// are returned as a tuple together with the error. This can be used
+	/// to retry on error, or just to get back access to registers or buses.
+	pub fn new<Opt, D: DelayNs>(options: Opt, delay: &mut D) -> core::result::Result<Self, (Opt, Error<Opt::IoError>)>
+	where
+		Opt: DisplayOptions<Bus = B, MemoryMap = M, Charset = C>,
+	{
+		options.new_display(delay, sealed::Internal)
+	}
+
+	pub fn destroy(self) -> B {
+		self.bus
+	}
+
+	pub(crate) fn new_raw(bus: B, memory_map: M, charset: C, entry_mode: EntryMode, display_mode: DisplayMode) -> Self {
+		Self { bus, memory_map, charset, entry_mode, display_mode }
+	}
+
 	/// Unshifts the display and sets the cursor position to 0
 	///
 	/// ```rust,ignore
@@ -250,14 +129,14 @@ where
 		Ok(())
 	}
 
-	/// Get the display size.
-	pub fn display_size(&self) -> DisplaySize {
-		self.display_size
+	/// Get the memory map information for this display.
+	pub fn memory_map(&self) -> &M {
+		&self.memory_map
 	}
 
-	/// Set the display size.
-	pub fn set_display_size(&mut self, display_size: DisplaySize) {
-		self.display_size = display_size;
+	/// Get the display size.
+	pub fn display_size(&self) -> DisplaySize {
+		self.memory_map.display_size()
 	}
 
 	/// If enabled, automatically scroll the display when a new
@@ -313,10 +192,10 @@ where
 	///
 	/// ```rust,ignore
 	/// // Move right (Default) when a new character is written
-	/// lcd.set_cursor_mode(CursorMode::Right)
+	/// lcd.set_cursor_mode(CursorMode::Right);
 	///
 	/// // Move left when a new character is written
-	/// lcd.set_cursor_mode(CursorMode::Left)
+	/// lcd.set_cursor_mode(CursorMode::Left);
 	/// ```
 	pub fn set_cursor_mode<D: DelayNs>(&mut self, mode: CursorMode, delay: &mut D) -> Result<(), B::Error> {
 		self.entry_mode.cursor_mode = mode;
@@ -333,27 +212,27 @@ where
 	/// ```rust,ignore
 	/// // Move to the start of line 2
 	/// // for a 20 columns display
-	/// lcd.set_cursor_pos(40)
+	/// lcd.set_cursor_pos(40);
 	/// ```
 	pub fn set_cursor_pos<D: DelayNs>(&mut self, position: u8, delay: &mut D) -> Result<(), B::Error> {
-		let size = self.display_size.get();
-		let position = (position % size.0, position / size.0);
-		self.set_cursor_xy(position, delay)
+		let lower_7_bits = 0b0111_1111 & position;
+
+		self.write_command(0b1000_0000 | lower_7_bits, delay)
 	}
 
 	/// Set the cursor position
 	///
 	/// ```rust,ignore
 	/// // Move to the start of line 3
-	/// lcd.set_cursor_pos_xy(0,2)
+	/// lcd.set_cursor_pos_xy(0,2);
 	/// ```
 	pub fn set_cursor_xy<D: DelayNs>(&mut self, position: (u8, u8), delay: &mut D) -> Result<(), B::Error> {
-		let size = self.display_size.get();
-		let pos = get_position_generic(position, size)?;
+		let size = self.display_size().get();
+		let Some(pos) = self.memory_map.address_for_xy(position.0, position.1) else {
+			return Err(Error::Position { position, size });
+		};
 
-		let lower_7_bits = 0b0111_1111 & pos;
-
-		self.write_command(0b1000_0000 | lower_7_bits, delay)?;
+		self.write_command(0b1000_0000 | pos, delay)?;
 
 		Ok(())
 	}
@@ -401,7 +280,7 @@ where
 	/// lcd.write_char('A', &mut delay)?; // prints 'A'
 	/// ```
 	pub fn write_char<D: DelayNs>(&mut self, data: char, delay: &mut D) -> Result<(), B::Error> {
-		self.write_byte(data as u8, delay)
+		self.write_byte(self.charset.code_from_utf8_with_fallback(data), delay)
 	}
 
 	fn write_command<D: DelayNs>(&mut self, cmd: u8, delay: &mut D) -> Result<(), B::Error> {
@@ -409,96 +288,6 @@ where
 
 		// Wait for the command to be processed
 		delay.delay_us(100);
-		Ok(())
-	}
-
-	fn init_4bit<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), B::Error> {
-		// Wait for the LCD to wakeup if it was off
-		delay.delay_ms(15u32);
-
-		// Initialize Lcd in 4-bit mode
-		self.bus.write(0x33, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_ms(5u32);
-
-		// Sets 4-bit operation and enables 5x7 mode for chars
-		self.bus.write(0x32, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		self.bus.write(0x28, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		// Clear Display
-		self.bus.write(0x0E, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		// Move the cursor to beginning of first line
-		self.bus.write(0x01, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		// Set entry mode
-		self.bus.write(self.entry_mode.as_byte(), false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		self.bus.write(0x80, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		Ok(())
-	}
-
-	// Follow the 8-bit setup procedure as specified in the HD44780 datasheet
-	fn init_8bit<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), B::Error> {
-		// Wait for the LCD to wakeup if it was off
-		delay.delay_ms(15u32);
-
-		// Initialize Lcd in 8-bit mode
-		self.bus.write(0b0011_0000, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_ms(5u32);
-
-		// Sets 8-bit operation and enables 5x7 mode for chars
-		self.bus.write(0b0011_1000, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		self.bus.write(0b0000_1110, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		// Clear Display
-		self.bus.write(0b0000_0001, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		// Move the cursor to beginning of first line
-		self.bus.write(0b000_0111, false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
-		// Set entry mode
-		self.bus.write(self.entry_mode.as_byte(), false, delay)?;
-
-		// Wait for the command to be processed
-		delay.delay_us(100);
-
 		Ok(())
 	}
 
@@ -510,7 +299,10 @@ where
 	/// lcd.write_str("Hello, World!", &mut delay)?;
 	/// ```
 	pub fn write_str<D: DelayNs>(&mut self, string: &str, delay: &mut D) -> Result<(), B::Error> {
-		self.write_bytes(string.as_bytes(), delay)
+		for ch in string.chars() {
+			self.write_char(ch, delay)?;
+		}
+		Ok(())
 	}
 
 	/// Writes a sequence of bytes to the HD44780. See the documentation on the
@@ -569,33 +361,8 @@ where
 //    }
 //}
 
-#[cfg(test)]
-mod test_lib {
-	use super::*;
-
-	#[test]
-	fn test_position() {
-		assert_eq!(0, get_position((0, 0), (20, 4)).unwrap());
-		assert_eq!(19, get_position((19, 0), (20, 4)).unwrap());
-		assert_eq!(64, get_position((0, 1), (20, 4)).unwrap());
-		assert_eq!(65, get_position((1, 1), (20, 4)).unwrap());
-	}
-
-	#[test]
-	#[should_panic]
-	fn test_panic_col() {
-		let _ = get_position((20, 0), (20, 4));
-	}
-
-	#[test]
-	#[should_panic]
-	fn test_panic_row() {
-		let _ = get_position((0, 4), (20, 4));
-	}
-
-	#[test]
-	#[should_panic]
-	fn test_panic_rowcol() {
-		let _ = get_position((20, 4), (20, 4));
-	}
+mod sealed {
+	/// Marker used to restrict access to internal sealed trait funcitons.
+	#[doc(hidden)]
+	pub struct Internal;
 }

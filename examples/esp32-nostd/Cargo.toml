@@ -1,0 +1,26 @@
+[package]
+name = "esp32-nostd"
+version = "0.1.0"
+authors = ["ColinTimBarndt <contact@colintimbarndt.de>"]
+edition = "2021"
+resolver = "2"
+rust-version = "1.77"
+
+[dependencies]
+esp-backtrace = { version = "0.14.1", features = [
+    "esp32",
+    "exception-handler",
+    "panic-handler",
+    "println",
+] }
+esp-hal = { version = "0.20.1", features = ["esp32", "embedded-hal"] }
+esp-println = { version = "0.11.0", features = ["esp32", "log"] }
+hd44780-driver = { path = "../.." }
+log = "0.4.22"
+
+[profile.release]
+opt-level = "s"
+
+[profile.dev]
+debug = true    # Symbols are nice and they don't increase the size on Flash
+opt-level = "z"

@@ -1,5 +1,3 @@
-use core::convert::Infallible;
-
 #[derive(Debug)]
 pub enum Error<IoE> {
 	/// Error related to IO of the MCU.
@@ -16,13 +14,6 @@ impl<E> Error<E> {
 	pub(crate) const fn wrap_io(port: Port) -> impl FnOnce(E) -> Self {
 		move |error| Self::Io { port, error }
 	}
-
-	pub(crate) const fn from_non_io(error: Error<Infallible>) -> Self {
-		match error {
-			Error::Io { .. } => unreachable!(), // error is Infallible, which has no variants by definition
-			Error::Position { position, size } => Self::Position { position, size },
-		}
-	}
 }
 
 impl<E: core::fmt::Debug> core::fmt::Display for Error<E> {
@@ -33,6 +24,43 @@ impl<E: core::fmt::Debug> core::fmt::Display for Error<E> {
 				f,
 				"coordinates out of bounds: ({};{}) not fitting in a {}x{} display",
 				position.0, position.1, size.0, size.1
+			),
+		}
+	}
+}
+
+#[cfg(feature = "defmt")]
+impl<E: defmt::Format> defmt::Format for Error<E> {
+	fn format(&self, fmt: defmt::Formatter) {
+		match self {
+			Self::Io { port, error } => defmt::write!(fmt, "error on {:?}: {:?}", port, error),
+			Self::Position { position, size } => defmt::write!(
+				fmt,
+				"coordinates out of bounds: ({};{}) not fitting in a {}x{} display",
+				position.0,
+				position.1,
+				size.0,
+				size.1
+			),
+		}
+	}
+}
+
+#[cfg(feature = "ufmt")]
+impl<E: ufmt::uDebug> ufmt::uDisplay for Error<E> {
+	fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> core::result::Result<(), W::Error>
+	where
+		W: ufmt::uWrite + ?Sized,
+	{
+		match self {
+			Self::Io { port, error } => ufmt::uwrite!(f, "error on {:?}: {:?}", port, error),
+			Self::Position { position, size } => ufmt::uwrite!(
+				f,
+				"coordinates out of bounds: ({};{}) not fitting in a {}x{} display",
+				position.0,
+				position.1,
+				size.0,
+				size.1
 			),
 		}
 	}
@@ -50,6 +78,8 @@ impl<E: core::error::Error + 'static> core::error::Error for Error<E> {
 pub type Result<T, E> = core::result::Result<T, Error<E>>;
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "ufmt", derive(ufmt::derive::uDebug))]
 pub enum Port {
 	/// Pin `D0` of an [EightBitBus][`crate::bus::EightBitBus`].
 	D0,
