@@ -6,7 +6,7 @@ use embedded_hal::{
 use sealed::SealedDisplayOptions;
 
 use crate::{
-	bus::{DataBus, EightBitBus, FourBitBus, I2CBus},
+	bus::{EightBitBus, FourBitBus, I2CBus, WritableDataBus},
 	charset::CharsetWithFallback,
 	entry_mode::EntryMode,
 	error::{Error, Result},
@@ -20,13 +20,13 @@ use super::{DisplayOptions4Bit, DisplayOptions8Bit, DisplayOptionsI2C};
 pub(crate) mod sealed {
 	use embedded_hal::delay::DelayNs;
 
-	use crate::{bus::DataBus, charset::CharsetWithFallback, memory_map::DisplayMemoryMap, sealed::Internal};
+	use crate::{bus::WritableDataBus, charset::CharsetWithFallback, memory_map::DisplayMemoryMap, sealed::Internal};
 
 	use super::DisplayOptionsResult;
 
 	#[doc(hidden)]
 	pub trait SealedDisplayOptions: Sized {
-		type Bus: DataBus;
+		type Bus: WritableDataBus;
 		type MemoryMap: DisplayMemoryMap;
 		type Charset: CharsetWithFallback;
 		type IoError: core::fmt::Debug;
@@ -164,7 +164,11 @@ impl<M: DisplayMemoryMap, C: CharsetWithFallback, I2C: I2c> SealedDisplayOptions
 }
 
 // Follow the 8-bit setup procedure as specified in the HD44780 datasheet
-fn init_8bit<B: DataBus, D: DelayNs>(bus: &mut B, entry_mode: &EntryMode, delay: &mut D) -> Result<(), B::Error> {
+fn init_8bit<B: WritableDataBus, D: DelayNs>(
+	bus: &mut B,
+	entry_mode: &EntryMode,
+	delay: &mut D,
+) -> Result<(), B::Error> {
 	// Wait for the LCD to wakeup if it was off
 	delay.delay_ms(15u32);
 
@@ -206,7 +210,11 @@ fn init_8bit<B: DataBus, D: DelayNs>(bus: &mut B, entry_mode: &EntryMode, delay:
 	Ok(())
 }
 
-fn init_4bit<B: DataBus, D: DelayNs>(bus: &mut B, entry_mode: &EntryMode, delay: &mut D) -> Result<(), B::Error> {
+fn init_4bit<B: WritableDataBus, D: DelayNs>(
+	bus: &mut B,
+	entry_mode: &EntryMode,
+	delay: &mut D,
+) -> Result<(), B::Error> {
 	// Wait for the LCD to wakeup if it was off
 	delay.delay_ms(15u32);
 

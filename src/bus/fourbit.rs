@@ -1,7 +1,7 @@
 use embedded_hal::delay::DelayNs;
 use embedded_hal::digital::{self, OutputPin};
 
-use crate::bus::DataBus;
+use crate::bus::WritableDataBus;
 use crate::error::{Error, Port, Result};
 
 #[derive(Debug, Clone, Copy)]
@@ -74,7 +74,7 @@ impl<
 		D6: OutputPin<Error = E>,
 		D7: OutputPin<Error = E>,
 		E: digital::Error,
-	> DataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
+	> WritableDataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
 {
 	type Error = E;
 
@@ -124,7 +124,7 @@ mod non_blocking {
 			D6: OutputPin<Error = E> + 'static,
 			D7: OutputPin<Error = E> + 'static,
 			E: digital::Error,
-		> DataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
+		> WritableDataBus for FourBitBus<RS, EN, D4, D5, D6, D7>
 	{
 		type Error = E;
 

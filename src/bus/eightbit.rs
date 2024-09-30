@@ -2,7 +2,7 @@ use embedded_hal::digital::OutputPin;
 use embedded_hal::{delay::DelayNs, digital};
 
 use crate::{
-	bus::DataBus,
+	bus::WritableDataBus,
 	error::{Error, Port, Result},
 };
 
@@ -95,7 +95,7 @@ impl<
 		D6: OutputPin<Error = E>,
 		D7: OutputPin<Error = E>,
 		E: digital::Error,
-	> DataBus for EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+	> WritableDataBus for EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
 	type Error = E;
 
@@ -141,7 +141,7 @@ mod non_blocking {
 			D6: OutputPin<Error = E> + 'static,
 			D7: OutputPin<Error = E> + 'static,
 			E: digital::Error,
-		> DataBus for EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+		> WritableDataBus for EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 	{
 		type Error = E;
 
