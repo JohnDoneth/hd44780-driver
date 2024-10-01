@@ -12,8 +12,11 @@ use esp_hal::{
 	system::SystemControl,
 };
 use hd44780_driver::{
-	bus::EightBitBusPins, charset::CharsetA00, memory_map::MemoryMap1602, setup::DisplayOptions8Bit, Cursor,
-	CursorBlink, Direction, Display, DisplayMode, HD44780,
+	bus::{EightBitBusPins, WriteOnlyMode},
+	charset::CharsetA00,
+	memory_map::MemoryMap1602,
+	setup::DisplayOptions8Bit,
+	Cursor, CursorBlink, Direction, Display, DisplayMode, HD44780,
 };
 use log::{error, info};
 
@@ -33,6 +36,7 @@ fn main() -> ! {
 	let mut options = DisplayOptions8Bit::new(MemoryMap1602::new())
 		.with_pins(EightBitBusPins {
 			rs: make_output(io.pins.gpio12),
+			rw: WriteOnlyMode,
 			en: make_output(io.pins.gpio14),
 
 			d0: make_output(io.pins.gpio2),

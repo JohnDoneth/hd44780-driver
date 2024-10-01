@@ -5,12 +5,12 @@ use embedded_hal_async::{delay::DelayNs, i2c::I2c};
 use sealed::SealedDisplayOptions;
 
 use crate::{
-	bus::{EightBitBus, FourBitBus, I2CBus},
+	bus::{EightBitBus, FourBitBus, I2CBus, WriteSelect},
 	charset::CharsetWithFallback,
 	entry_mode::EntryMode,
-	error::{Error, Result},
+	error::{Error, Port, Result},
 	memory_map::DisplayMemoryMap,
-	non_blocking::{bus::DataBus, HD44780},
+	non_blocking::{bus::WritableDataBus, HD44780},
 	sealed::Internal,
 	DisplayMode,
 };
@@ -23,14 +23,15 @@ pub(crate) mod sealed {
 	use embedded_hal_async::delay::DelayNs;
 
 	use crate::{
-		charset::CharsetWithFallback, memory_map::DisplayMemoryMap, non_blocking::bus::DataBus, sealed::Internal,
+		charset::CharsetWithFallback, memory_map::DisplayMemoryMap, non_blocking::bus::WritableDataBus,
+		sealed::Internal,
 	};
 
 	use super::DisplayOptionsResult;
 
 	#[doc(hidden)]
 	pub trait SealedDisplayOptions: Sized {
-		type Bus: DataBus;
+		type Bus: WritableDataBus;
 		type MemoryMap: DisplayMemoryMap;
 		type Charset: CharsetWithFallback;
 		type IoError: core::fmt::Debug;
@@ -59,6 +60,7 @@ impl<
 		M: DisplayMemoryMap + 'static,
 		C: CharsetWithFallback + 'static,
 		RS: OutputPin<Error = E> + 'static,
+		RW: WriteSelect<E> + 'static,
 		EN: OutputPin<Error = E> + 'static,
 		D0: OutputPin<Error = E> + 'static,
 		D1: OutputPin<Error = E> + 'static,
@@ -69,7 +71,7 @@ impl<
 		D6: OutputPin<Error = E> + 'static,
 		D7: OutputPin<Error = E> + 'static,
 		E: digital::Error,
-	> DisplayOptions for DisplayOptions8Bit<M, C, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+	> DisplayOptions for DisplayOptions8Bit<M, C, RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
 }
 
@@ -77,6 +79,7 @@ impl<
 		M: DisplayMemoryMap + 'static,
 		C: CharsetWithFallback + 'static,
 		RS: OutputPin<Error = E> + 'static,
+		RW: WriteSelect<E> + 'static,
 		EN: OutputPin<Error = E> + 'static,
 		D0: OutputPin<Error = E> + 'static,
 		D1: OutputPin<Error = E> + 'static,
@@ -87,9 +90,9 @@ impl<
 		D6: OutputPin<Error = E> + 'static,
 		D7: OutputPin<Error = E> + 'static,
 		E: digital::Error,
-	> SealedDisplayOptions for DisplayOptions8Bit<M, C, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+	> SealedDisplayOptions for DisplayOptions8Bit<M, C, RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
-	type Bus = EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>;
+	type Bus = EightBitBus<RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>;
 	type MemoryMap = M;
 	type Charset = C;
 	type IoError = E;
@@ -98,6 +101,10 @@ impl<
 
 	fn new_display<D: DelayNs>(mut self, delay: &mut D, _: Internal) -> Self::Future<'_, D> {
 		async move {
+			if let Err(error) = self.pins.rw.select_write(Internal) {
+				return Err((self, Error::Io { port: Port::RW, error }));
+			}
+
 			let mut bus = EightBitBus::from_pins(self.pins);
 
 			if let Err(error) = init_8bit(&mut bus, &self.entry_mode, delay).await {
@@ -114,13 +121,14 @@ impl<
 		M: DisplayMemoryMap + 'static,
 		C: CharsetWithFallback + 'static,
 		RS: OutputPin<Error = E> + 'static,
+		RW: WriteSelect<E> + 'static,
 		EN: OutputPin<Error = E> + 'static,
 		D4: OutputPin<Error = E> + 'static,
 		D5: OutputPin<Error = E> + 'static,
 		D6: OutputPin<Error = E> + 'static,
 		D7: OutputPin<Error = E> + 'static,
 		E: digital::Error,
-	> DisplayOptions for DisplayOptions4Bit<M, C, RS, EN, D4, D5, D6, D7>
+	> DisplayOptions for DisplayOptions4Bit<M, C, RS, RW, EN, D4, D5, D6, D7>
 {
 }
 
@@ -128,15 +136,16 @@ impl<
 		M: DisplayMemoryMap + 'static,
 		C: CharsetWithFallback + 'static,
 		RS: OutputPin<Error = E> + 'static,
+		RW: WriteSelect<E> + 'static,
 		EN: OutputPin<Error = E> + 'static,
 		D4: OutputPin<Error = E> + 'static,
 		D5: OutputPin<Error = E> + 'static,
 		D6: OutputPin<Error = E> + 'static,
 		D7: OutputPin<Error = E> + 'static,
 		E: digital::Error,
-	> SealedDisplayOptions for DisplayOptions4Bit<M, C, RS, EN, D4, D5, D6, D7>
+	> SealedDisplayOptions for DisplayOptions4Bit<M, C, RS, RW, EN, D4, D5, D6, D7>
 {
-	type Bus = FourBitBus<RS, EN, D4, D5, D6, D7>;
+	type Bus = FourBitBus<RS, RW, EN, D4, D5, D6, D7>;
 	type MemoryMap = M;
 	type Charset = C;
 	type IoError = E;
@@ -145,6 +154,10 @@ impl<
 
 	fn new_display<D: DelayNs>(mut self, delay: &mut D, _: Internal) -> Self::Future<'_, D> {
 		async move {
+			if let Err(error) = self.pins.rw.select_write(Internal) {
+				return Err((self, Error::Io { port: Port::RW, error }));
+			}
+
 			let mut bus = FourBitBus::from_pins(self.pins);
 
 			if let Err(error) = init_4bit(&mut bus, &self.entry_mode, delay).await {
@@ -187,7 +200,11 @@ impl<M: DisplayMemoryMap + 'static, C: CharsetWithFallback + 'static, I2C: I2c +
 }
 
 // Follow the 8-bit setup procedure as specified in the HD44780 datasheet
-async fn init_8bit<B: DataBus, D: DelayNs>(bus: &mut B, entry_mode: &EntryMode, delay: &mut D) -> Result<(), B::Error> {
+async fn init_8bit<B: WritableDataBus, D: DelayNs>(
+	bus: &mut B,
+	entry_mode: &EntryMode,
+	delay: &mut D,
+) -> Result<(), B::Error> {
 	// Wait for the LCD to wakeup if it was off
 	delay.delay_ms(15).await;
 
@@ -229,7 +246,11 @@ async fn init_8bit<B: DataBus, D: DelayNs>(bus: &mut B, entry_mode: &EntryMode, 
 	Ok(())
 }
 
-async fn init_4bit<B: DataBus, D: DelayNs>(bus: &mut B, entry_mode: &EntryMode, delay: &mut D) -> Result<(), B::Error> {
+async fn init_4bit<B: WritableDataBus, D: DelayNs>(
+	bus: &mut B,
+	entry_mode: &EntryMode,
+	delay: &mut D,
+) -> Result<(), B::Error> {
 	// Wait for the LCD to wakeup if it was off
 	delay.delay_ms(15).await;
 

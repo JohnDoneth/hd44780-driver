@@ -6,10 +6,10 @@ use embedded_hal::{
 use sealed::SealedDisplayOptions;
 
 use crate::{
-	bus::{DataBus, EightBitBus, FourBitBus, I2CBus},
+	bus::{EightBitBus, FourBitBus, I2CBus, WritableDataBus, WriteSelect},
 	charset::CharsetWithFallback,
 	entry_mode::EntryMode,
-	error::{Error, Result},
+	error::{Error, Port, Result},
 	memory_map::DisplayMemoryMap,
 	sealed::Internal,
 	DisplayMode, HD44780,
@@ -20,13 +20,13 @@ use super::{DisplayOptions4Bit, DisplayOptions8Bit, DisplayOptionsI2C};
 pub(crate) mod sealed {
 	use embedded_hal::delay::DelayNs;
 
-	use crate::{bus::DataBus, charset::CharsetWithFallback, memory_map::DisplayMemoryMap, sealed::Internal};
+	use crate::{bus::WritableDataBus, charset::CharsetWithFallback, memory_map::DisplayMemoryMap, sealed::Internal};
 
 	use super::DisplayOptionsResult;
 
 	#[doc(hidden)]
 	pub trait SealedDisplayOptions: Sized {
-		type Bus: DataBus;
+		type Bus: WritableDataBus;
 		type MemoryMap: DisplayMemoryMap;
 		type Charset: CharsetWithFallback;
 		type IoError: core::fmt::Debug;
@@ -53,6 +53,7 @@ impl<
 		M: DisplayMemoryMap,
 		C: CharsetWithFallback,
 		RS: OutputPin<Error = E>,
+		RW: WriteSelect<E>,
 		EN: OutputPin<Error = E>,
 		D0: OutputPin<Error = E>,
 		D1: OutputPin<Error = E>,
@@ -63,7 +64,7 @@ impl<
 		D6: OutputPin<Error = E>,
 		D7: OutputPin<Error = E>,
 		E: digital::Error,
-	> DisplayOptions for DisplayOptions8Bit<M, C, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+	> DisplayOptions for DisplayOptions8Bit<M, C, RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
 }
 
@@ -71,6 +72,7 @@ impl<
 		M: DisplayMemoryMap,
 		C: CharsetWithFallback,
 		RS: OutputPin<Error = E>,
+		RW: WriteSelect<E>,
 		EN: OutputPin<Error = E>,
 		D0: OutputPin<Error = E>,
 		D1: OutputPin<Error = E>,
@@ -81,14 +83,18 @@ impl<
 		D6: OutputPin<Error = E>,
 		D7: OutputPin<Error = E>,
 		E: digital::Error,
-	> SealedDisplayOptions for DisplayOptions8Bit<M, C, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+	> SealedDisplayOptions for DisplayOptions8Bit<M, C, RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
-	type Bus = EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>;
+	type Bus = EightBitBus<RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>;
 	type MemoryMap = M;
 	type Charset = C;
 	type IoError = E;
 
 	fn new_display<D: DelayNs>(mut self, delay: &mut D, _: Internal) -> DisplayOptionsResult<Self> {
+		if let Err(error) = self.pins.rw.select_write(Internal) {
+			return Err((self, Error::Io { port: Port::RW, error }));
+		}
+
 		let mut bus = EightBitBus::from_pins(self.pins);
 
 		if let Err(error) = init_8bit(&mut bus, &self.entry_mode, delay) {
@@ -104,13 +110,14 @@ impl<
 		M: DisplayMemoryMap,
 		C: CharsetWithFallback,
 		RS: OutputPin<Error = E>,
+		RW: WriteSelect<E>,
 		EN: OutputPin<Error = E>,
 		D4: OutputPin<Error = E>,
 		D5: OutputPin<Error = E>,
 		D6: OutputPin<Error = E>,
 		D7: OutputPin<Error = E>,
 		E: digital::Error,
-	> DisplayOptions for DisplayOptions4Bit<M, C, RS, EN, D4, D5, D6, D7>
+	> DisplayOptions for DisplayOptions4Bit<M, C, RS, RW, EN, D4, D5, D6, D7>
 {
 }
 
@@ -118,20 +125,25 @@ impl<
 		M: DisplayMemoryMap,
 		C: CharsetWithFallback,
 		RS: OutputPin<Error = E>,
+		RW: WriteSelect<E>,
 		EN: OutputPin<Error = E>,
 		D4: OutputPin<Error = E>,
 		D5: OutputPin<Error = E>,
 		D6: OutputPin<Error = E>,
 		D7: OutputPin<Error = E>,
 		E: digital::Error,
-	> SealedDisplayOptions for DisplayOptions4Bit<M, C, RS, EN, D4, D5, D6, D7>
+	> SealedDisplayOptions for DisplayOptions4Bit<M, C, RS, RW, EN, D4, D5, D6, D7>
 {
-	type Bus = FourBitBus<RS, EN, D4, D5, D6, D7>;
+	type Bus = FourBitBus<RS, RW, EN, D4, D5, D6, D7>;
 	type MemoryMap = M;
 	type Charset = C;
 	type IoError = E;
 
 	fn new_display<D: DelayNs>(mut self, delay: &mut D, _: Internal) -> DisplayOptionsResult<Self> {
+		if let Err(error) = self.pins.rw.select_write(Internal) {
+			return Err((self, Error::Io { port: Port::RW, error }));
+		}
+
 		let mut bus = FourBitBus::from_pins(self.pins);
 
 		if let Err(error) = init_4bit(&mut bus, &self.entry_mode, delay) {
@@ -164,7 +176,11 @@ impl<M: DisplayMemoryMap, C: CharsetWithFallback, I2C: I2c> SealedDisplayOptions
 }
 
 // Follow the 8-bit setup procedure as specified in the HD44780 datasheet
-fn init_8bit<B: DataBus, D: DelayNs>(bus: &mut B, entry_mode: &EntryMode, delay: &mut D) -> Result<(), B::Error> {
+fn init_8bit<B: WritableDataBus, D: DelayNs>(
+	bus: &mut B,
+	entry_mode: &EntryMode,
+	delay: &mut D,
+) -> Result<(), B::Error> {
 	// Wait for the LCD to wakeup if it was off
 	delay.delay_ms(15u32);
 
@@ -206,7 +222,11 @@ fn init_8bit<B: DataBus, D: DelayNs>(bus: &mut B, entry_mode: &EntryMode, delay:
 	Ok(())
 }
 
-fn init_4bit<B: DataBus, D: DelayNs>(bus: &mut B, entry_mode: &EntryMode, delay: &mut D) -> Result<(), B::Error> {
+fn init_4bit<B: WritableDataBus, D: DelayNs>(
+	bus: &mut B,
+	entry_mode: &EntryMode,
+	delay: &mut D,
+) -> Result<(), B::Error> {
 	// Wait for the LCD to wakeup if it was off
 	delay.delay_ms(15u32);
 

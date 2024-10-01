@@ -31,6 +31,7 @@ let mut lcd = HD44780::new(
     DisplayOptions8Bit::new(MemoryMap1602::new())
         .with_pins(FourBitBusPins {
             rs: d4.into_push_pull_output(&mut port), // Register Select pin,
+            rw: WriteOnlyMode,                       // Read/Write pin is pulled low,
             en: d3.into_push_pull_output(&mut port), // Enable pin,
 
             d4: d9.into_push_pull_output(&mut port),  // d4,
@@ -84,6 +85,7 @@ let mut display = HD44780::new(
     DisplayOptions8Bit::new(MemoryMap1602::new())
         .with_pins(FourBitBusPins {
             rs,
+            rw,
             en,
             d4,
             d5,

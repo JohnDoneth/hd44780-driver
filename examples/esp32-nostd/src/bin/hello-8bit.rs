@@ -11,7 +11,12 @@ use esp_hal::{
 	prelude::*,
 	system::SystemControl,
 };
-use hd44780_driver::{bus::EightBitBusPins, memory_map::MemoryMap1602, setup::DisplayOptions8Bit, HD44780};
+use hd44780_driver::{
+	bus::{EightBitBusPins, WriteOnlyMode},
+	memory_map::MemoryMap1602,
+	setup::DisplayOptions8Bit,
+	HD44780,
+};
 use log::{error, info};
 
 #[entry]
@@ -29,6 +34,7 @@ fn main() -> ! {
 	// Configure LCD driver with 10 pins
 	let mut options = DisplayOptions8Bit::new(MemoryMap1602::new()).with_pins(EightBitBusPins {
 		rs: make_output(io.pins.gpio12),
+		rw: WriteOnlyMode,
 		en: make_output(io.pins.gpio14),
 
 		d0: make_output(io.pins.gpio2),

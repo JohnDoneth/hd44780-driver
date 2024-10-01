@@ -7,7 +7,7 @@ use display_size::DisplaySize;
 use embedded_hal::delay::DelayNs;
 
 pub mod bus;
-use bus::DataBus;
+use bus::WritableDataBus;
 
 pub mod error;
 use error::{Error, Result};
@@ -24,6 +24,7 @@ pub mod memory_map;
 
 pub mod display_mode;
 pub mod display_size;
+pub mod display_status;
 
 pub use display_mode::DisplayMode;
 use memory_map::DisplayMemoryMap;
@@ -33,7 +34,7 @@ use setup::blocking::DisplayOptions;
 #[cfg(feature = "async")]
 pub mod non_blocking;
 
-pub struct HD44780<B: DataBus, M: DisplayMemoryMap, C: CharsetWithFallback> {
+pub struct HD44780<B, M: DisplayMemoryMap, C: CharsetWithFallback> {
 	bus: B,
 	memory_map: M,
 	charset: C,
@@ -65,7 +66,7 @@ pub enum CursorBlink {
 
 impl<B, M, C> HD44780<B, M, C>
 where
-	B: DataBus,
+	B: WritableDataBus,
 	M: DisplayMemoryMap,
 	C: CharsetWithFallback,
 {

@@ -15,23 +15,23 @@ pub(crate) mod non_blocking;
 pub struct Unspecified;
 
 #[derive(Debug, Clone, Copy)]
-pub struct DisplayOptions8Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7> {
+pub struct DisplayOptions8Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7> {
 	/// Memory map used for mapping 2D coordinates to the display.
 	pub memory_map: M,
 	/// The character set this display uses.
 	pub charset: C,
 	pub entry_mode: EntryMode,
-	pub pins: EightBitBusPins<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>,
+	pub pins: EightBitBusPins<RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct DisplayOptions4Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D4, D5, D6, D7> {
+pub struct DisplayOptions4Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, RW, EN, D4, D5, D6, D7> {
 	/// Memory map used for mapping 2D coordinates to the display.
 	pub memory_map: M,
 	/// The character set this display uses.
 	pub charset: C,
 	pub entry_mode: EntryMode,
-	pub pins: FourBitBusPins<RS, EN, D4, D5, D6, D7>,
+	pub pins: FourBitBusPins<RS, RW, EN, D4, D5, D6, D7>,
 }
 
 pub struct DisplayOptionsI2C<M: DisplayMemoryMap, C: CharsetWithFallback, I2C> {
@@ -58,6 +58,7 @@ impl<M: DisplayMemoryMap>
 		Unspecified,
 		Unspecified,
 		Unspecified,
+		Unspecified,
 	>
 {
 	pub fn new(memory_map: M) -> Self {
@@ -67,6 +68,7 @@ impl<M: DisplayMemoryMap>
 			entry_mode: EntryMode::default(),
 			pins: EightBitBusPins {
 				rs: Unspecified,
+				rw: Unspecified,
 				en: Unspecified,
 				d0: Unspecified,
 				d1: Unspecified,
@@ -91,6 +93,7 @@ impl<M: DisplayMemoryMap>
 		Unspecified,
 		Unspecified,
 		Unspecified,
+		Unspecified,
 	>
 {
 	pub fn new(memory_map: M) -> Self {
@@ -100,6 +103,7 @@ impl<M: DisplayMemoryMap>
 			entry_mode: EntryMode::default(),
 			pins: FourBitBusPins {
 				rs: Unspecified,
+				rw: Unspecified,
 				en: Unspecified,
 				d4: Unspecified,
 				d5: Unspecified,
@@ -153,12 +157,12 @@ macro_rules! builder_functions {
 	};
 }
 
-builder_functions!(DisplayOptions8Bit < RS, EN, D0, D1, D2, D3, D4, D5, D6, D7 > { pins });
-builder_functions!(DisplayOptions4Bit < RS, EN, D4, D5, D6, D7 > { pins });
+builder_functions!(DisplayOptions8Bit < RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7 > { pins });
+builder_functions!(DisplayOptions4Bit < RS, RW, EN, D4, D5, D6, D7 > { pins });
 builder_functions!(DisplayOptionsI2C<I2C> { i2c_bus, address });
 
-impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
-	DisplayOptions8Bit<M, C, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+	DisplayOptions8Bit<M, C, RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 {
 	/// The eight d0..d7 pins are used to send and recieve with
 	/// the `HD44780`.
@@ -166,16 +170,17 @@ impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D0, D1, D2, D3, D4, D5
 	/// if incoming data is a command or data.
 	/// The enable pin `en` is used to tell the `HD44780` that there
 	/// is data on the 8 data pins and that it should read them in.
-	pub fn with_pins<RS2, EN2, D02, D12, D22, D32, D42, D52, D62, D72>(
+	#[allow(clippy::type_complexity)] // there is no way around this
+	pub fn with_pins<RS2, RW2, EN2, D02, D12, D22, D32, D42, D52, D62, D72>(
 		self,
-		pins: EightBitBusPins<RS2, EN2, D02, D12, D22, D32, D42, D52, D62, D72>,
-	) -> DisplayOptions8Bit<M, C, RS2, EN2, D02, D12, D22, D32, D42, D52, D62, D72> {
+		pins: EightBitBusPins<RS2, RW2, EN2, D02, D12, D22, D32, D42, D52, D62, D72>,
+	) -> DisplayOptions8Bit<M, C, RS2, RW2, EN2, D02, D12, D22, D32, D42, D52, D62, D72> {
 		DisplayOptions8Bit { memory_map: self.memory_map, charset: self.charset, entry_mode: self.entry_mode, pins }
 	}
 }
 
-impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D4, D5, D6, D7>
-	DisplayOptions4Bit<M, C, RS, EN, D4, D5, D6, D7>
+impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, RW, EN, D4, D5, D6, D7>
+	DisplayOptions4Bit<M, C, RS, RW, EN, D4, D5, D6, D7>
 {
 	/// The four d4..d7 pins are used to send and recieve with
 	/// the `HD44780`.
@@ -183,10 +188,10 @@ impl<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D4, D5, D6, D7>
 	/// if incoming data is a command or data.
 	/// The enable pin `en` is used to tell the `HD44780` that there
 	/// is data on the 4 data pins and that it should read them in.
-	pub fn with_pins<RS2, EN2, D42, D52, D62, D72>(
+	pub fn with_pins<RS2, RW2, EN2, D42, D52, D62, D72>(
 		self,
-		pins: FourBitBusPins<RS2, EN2, D42, D52, D62, D72>,
-	) -> DisplayOptions4Bit<M, C, RS2, EN2, D42, D52, D62, D72> {
+		pins: FourBitBusPins<RS2, RW2, EN2, D42, D52, D62, D72>,
+	) -> DisplayOptions4Bit<M, C, RS2, RW2, EN2, D42, D52, D62, D72> {
 		DisplayOptions4Bit { memory_map: self.memory_map, charset: self.charset, entry_mode: self.entry_mode, pins }
 	}
 }
