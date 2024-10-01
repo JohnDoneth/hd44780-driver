@@ -173,18 +173,21 @@ impl<
 #[cfg(feature = "async")]
 mod non_blocking {
 	use core::future::Future;
-	use embedded_hal::digital::{self, OutputPin};
+	use embedded_hal::digital::{self, InputPin, OutputPin};
 	use embedded_hal_async::delay::DelayNs;
 
 	use crate::{
+		bus::{ReadSelect, WriteSelect},
 		error::{Error, Port, Result},
-		non_blocking::bus::DataBus,
+		non_blocking::bus::{ReadableDataBus, WritableDataBus},
+		sealed::Internal,
 	};
 
 	use super::EightBitBus;
 
 	impl<
 			RS: OutputPin<Error = E> + 'static,
+			RW: WriteSelect<E> + 'static,
 			EN: OutputPin<Error = E> + 'static,
 			D0: OutputPin<Error = E> + 'static,
 			D1: OutputPin<Error = E> + 'static,
@@ -195,18 +198,13 @@ mod non_blocking {
 			D6: OutputPin<Error = E> + 'static,
 			D7: OutputPin<Error = E> + 'static,
 			E: digital::Error,
-		> WritableDataBus for EightBitBus<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+		> WritableDataBus for EightBitBus<RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>
 	{
 		type Error = E;
 
-		type WriteFuture<'a, D: 'a + DelayNs> = impl Future<Output = Result<(), Self::Error>> + 'a;
+		type Future<'a, D: 'a + DelayNs> = impl Future<Output = Result<(), Self::Error>> + 'a;
 
-		fn write<'a, D: DelayNs + 'a>(
-			&'a mut self,
-			byte: u8,
-			data: bool,
-			delay: &'a mut D,
-		) -> Self::WriteFuture<'a, D> {
+		fn write<'a, D: DelayNs + 'a>(&'a mut self, byte: u8, data: bool, delay: &'a mut D) -> Self::Future<'a, D> {
 			async move {
 				self.pins.rs.set_state(data.into()).map_err(Error::wrap_io(Port::RS))?;
 
@@ -221,6 +219,44 @@ mod non_blocking {
 				}
 
 				Ok(())
+			}
+		}
+	}
+
+	impl<
+			RS: OutputPin<Error = E> + 'static,
+			RW: WriteSelect<E> + ReadSelect<E> + 'static,
+			EN: OutputPin<Error = E> + 'static,
+			D0: OutputPin<Error = E> + InputPin<Error = E> + 'static,
+			D1: OutputPin<Error = E> + InputPin<Error = E> + 'static,
+			D2: OutputPin<Error = E> + InputPin<Error = E> + 'static,
+			D3: OutputPin<Error = E> + InputPin<Error = E> + 'static,
+			D4: OutputPin<Error = E> + InputPin<Error = E> + 'static,
+			D5: OutputPin<Error = E> + InputPin<Error = E> + 'static,
+			D6: OutputPin<Error = E> + InputPin<Error = E> + 'static,
+			D7: OutputPin<Error = E> + InputPin<Error = E> + 'static,
+			E: digital::Error,
+		> ReadableDataBus for EightBitBus<RS, RW, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+	{
+		type Error = E;
+
+		type Future<'a, D: 'a + DelayNs> = impl Future<Output = Result<u8, Self::Error>> + 'a;
+
+		fn read<'a, D: DelayNs + 'a>(&'a mut self, data: bool, delay: &'a mut D) -> Self::Future<'a, D> {
+			async move {
+				self.pins.rs.set_state(data.into()).map_err(Error::wrap_io(Port::RS))?;
+
+				self.set_bus_bits(0xff)?;
+				self.pins.rw.select_read(Internal).map_err(Error::wrap_io(Port::RW))?;
+
+				self.pins.en.set_high().map_err(Error::wrap_io(Port::EN))?;
+				delay.delay_ms(2u32).await;
+				let read_byte = self.get_bus_bits()?;
+				self.pins.en.set_low().map_err(Error::wrap_io(Port::EN))?;
+
+				self.pins.rw.select_write(Internal).map_err(Error::wrap_io(Port::RW))?;
+
+				Ok(read_byte)
 			}
 		}
 	}
