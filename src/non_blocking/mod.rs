@@ -22,8 +22,8 @@ pub use crate::display_mode;
 
 pub use display_mode::DisplayMode;
 
-pub struct HD44780<B: WritableDataBus, M: DisplayMemoryMap, C: CharsetWithFallback> {
-	bus: B,
+pub struct HD44780<B, M: DisplayMemoryMap, C: CharsetWithFallback> {
+	pub(crate) bus: B,
 	memory_map: M,
 	charset: C,
 	entry_mode: EntryMode,
