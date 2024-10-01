@@ -11,7 +11,12 @@ use esp_hal::{
 	prelude::*,
 	system::SystemControl,
 };
-use hd44780_driver::{bus::FourBitBusPins, memory_map::MemoryMap1602, setup::DisplayOptions4Bit, HD44780};
+use hd44780_driver::{
+	bus::{FourBitBusPins, WriteOnlyMode},
+	memory_map::MemoryMap1602,
+	setup::DisplayOptions4Bit,
+	HD44780,
+};
 use log::{error, info};
 
 #[entry]
@@ -29,6 +34,7 @@ fn main() -> ! {
 	// Configure LCD driver with 6 pins
 	let mut options = DisplayOptions4Bit::new(MemoryMap1602::new()).with_pins(FourBitBusPins {
 		rs: make_output(io.pins.gpio12),
+		rw: WriteOnlyMode,
 		en: make_output(io.pins.gpio14),
 
 		d4: make_output(io.pins.gpio17),
