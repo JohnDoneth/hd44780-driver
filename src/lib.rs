@@ -17,17 +17,19 @@ pub mod entry_mode;
 use entry_mode::{CursorMode, EntryMode};
 
 pub mod setup;
+use setup::blocking::DisplayOptions;
 
 pub mod charset;
 
 pub mod memory_map;
+use memory_map::DisplayMemoryMap;
 
 pub mod display_mode;
 pub mod display_size;
 
 pub use display_mode::DisplayMode;
-use memory_map::DisplayMemoryMap;
-use setup::blocking::DisplayOptions;
+
+pub mod writer;
 
 /// Implementation of async functionality
 #[cfg(feature = "async")]
@@ -132,6 +134,11 @@ where
 	/// Get the memory map information for this display.
 	pub fn memory_map(&self) -> &M {
 		&self.memory_map
+	}
+
+	/// Get the character set for this display.
+	pub fn charset(&self) -> &C {
+		&self.charset
 	}
 
 	/// Get the display size.

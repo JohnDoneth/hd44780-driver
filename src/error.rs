@@ -8,6 +8,8 @@ pub enum Error<IoE> {
 	},
 	/// Invalid coordinates on the display.
 	Position { position: (u8, u8), size: (u8, u8) },
+	/// Writer has reached its end.
+	EOF,
 }
 
 impl<E> Error<E> {
@@ -25,6 +27,7 @@ impl<E: core::fmt::Debug> core::fmt::Display for Error<E> {
 				"coordinates out of bounds: ({};{}) not fitting in a {}x{} display",
 				position.0, position.1, size.0, size.1
 			),
+			Self::EOF => write!(f, "writer has reached its end"),
 		}
 	}
 }
@@ -42,6 +45,7 @@ impl<E: defmt::Format> defmt::Format for Error<E> {
 				size.0,
 				size.1
 			),
+			Self::EOF => defmt::write!(fmt, "writer has reached its end"),
 		}
 	}
 }
@@ -62,6 +66,7 @@ impl<E: ufmt::uDebug> ufmt::uDisplay for Error<E> {
 				size.0,
 				size.1
 			),
+			Self::EOF => ufmt::uwrite!(f, "writer has reached its end"),
 		}
 	}
 }

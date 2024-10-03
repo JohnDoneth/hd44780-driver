@@ -111,6 +111,11 @@ where
 		&self.memory_map
 	}
 
+	/// Get the character set for this display.
+	pub fn charset(&self) -> &C {
+		&self.charset
+	}
+
 	/// Get the display size.
 	pub fn display_size(&self) -> DisplaySize {
 		self.memory_map.display_size()
