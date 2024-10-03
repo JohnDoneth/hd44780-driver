@@ -17,6 +17,7 @@ pub struct DisplayWriter<'display, 'delay, Display, Delay> {
 	col_min: u8,
 	col_max: u8,
 	current_col_max: u8,
+	implicit_newline: bool,
 	done: bool,
 }
 
@@ -43,6 +44,7 @@ where
 			col_max: max.0,
 			line_max: max.1,
 			col_min: position.0,
+			implicit_newline: false,
 			done: false,
 		};
 		Ok(this)
@@ -67,34 +69,38 @@ where
 	Delay: DelayNs,
 {
 	fn write_str(&mut self, s: &str) -> core::fmt::Result {
-		let mut implicit_newline = false;
-
-		for char in s.chars() {
-			if char == '\n' {
-				self.done |= self.col == self.current_col_max;
-				self.new_line();
-				continue;
-			}
-
-			// Space is promoted to new line on implicit line breaks
-			if implicit_newline && char.is_ascii_whitespace() {
-				implicit_newline = false;
-				continue;
-			}
-			implicit_newline = false;
-
-			if self.done || self.display.write_char(char, self.delay).is_err() {
-				return Err(core::fmt::Error);
-			}
-
-			// Continue on new line
-			if self.col == self.current_col_max {
-				implicit_newline = true;
-				self.new_line();
-			} else {
-				self.col += 1;
-			}
+		for ch in s.chars() {
+			self.write_char(ch)?;
 		}
+		Ok(())
+	}
+
+	fn write_char(&mut self, ch: char) -> core::fmt::Result {
+		if ch == '\n' {
+			self.done |= self.col == self.current_col_max;
+			self.new_line();
+			return Ok(());
+		}
+
+		// Space is promoted to new line on implicit line breaks
+		if self.implicit_newline && ch.is_ascii_whitespace() {
+			self.implicit_newline = false;
+			return Ok(());
+		}
+		self.implicit_newline = false;
+
+		if self.done || self.display.write_char(ch, self.delay).is_err() {
+			return Err(core::fmt::Error);
+		}
+
+		// Continue on new line
+		if self.col == self.current_col_max {
+			self.implicit_newline = true;
+			self.new_line();
+		} else {
+			self.col += 1;
+		}
+
 		Ok(())
 	}
 }
@@ -110,36 +116,38 @@ where
 	type Error = crate::Error<B::Error>;
 
 	fn write_str(&mut self, s: &str) -> core::result::Result<(), Self::Error> {
-		let mut implicit_newline = false;
-
-		for char in s.chars() {
-			if char == '\n' {
-				self.done |= self.col == self.col_max;
-				self.new_line();
-				continue;
-			}
-
-			// Space is promoted to new line on implicit line breaks
-			if implicit_newline && self.display.charset().is_whitespace(char) {
-				implicit_newline = false;
-				continue;
-			}
-			implicit_newline = false;
-
-			if self.done {
-				return Err(Self::Error::EOF);
-			}
-
-			self.display.write_char(char, self.delay)?;
-
-			// Continue on new line
-			if self.col == self.col_max {
-				implicit_newline = true;
-				self.new_line();
-			} else {
-				self.col += 1;
-			}
+		for ch in s.chars() {
+			self.write_char(ch)?;
 		}
+		Ok(())
+	}
+
+	fn write_char(&mut self, ch: char) -> core::result::Result<(), Self::Error> {
+		if ch == '\n' {
+			self.done |= self.col == self.current_col_max;
+			self.new_line();
+			return Ok(());
+		}
+
+		// Space is promoted to new line on implicit line breaks
+		if self.implicit_newline && ch.is_ascii_whitespace() {
+			self.implicit_newline = false;
+			return Ok(());
+		}
+		self.implicit_newline = false;
+
+		if self.done || self.display.write_char(ch, self.delay).is_err() {
+			return Err(core::fmt::Error);
+		}
+
+		// Continue on new line
+		if self.col == self.current_col_max {
+			self.implicit_newline = true;
+			self.new_line();
+		} else {
+			self.col += 1;
+		}
+
 		Ok(())
 	}
 }
