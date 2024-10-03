@@ -83,7 +83,7 @@ where
 		}
 
 		// Space is promoted to new line on implicit line breaks
-		if self.implicit_newline && ch.is_ascii_whitespace() {
+		if self.implicit_newline && self.display.charset().is_whitespace(ch) {
 			self.implicit_newline = false;
 			return Ok(());
 		}
@@ -130,7 +130,7 @@ where
 		}
 
 		// Space is promoted to new line on implicit line breaks
-		if self.implicit_newline && ch.is_ascii_whitespace() {
+		if self.implicit_newline && self.display.charset().is_whitespace(ch) {
 			self.implicit_newline = false;
 			return Ok(());
 		}
