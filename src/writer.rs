@@ -54,7 +54,7 @@ where
 			self.line += 1;
 			self.col = self.col_min;
 			self.done |= self.display.set_cursor_xy((self.col, self.line), self.delay).is_err();
-			self.current_col_max = self.display.memory_map().columns_in_line(self.line);
+			self.current_col_max = self.display.memory_map().columns_in_line(self.line).min(self.col_max);
 		}
 	}
 }
@@ -71,7 +71,7 @@ where
 
 		for char in s.chars() {
 			if char == '\n' {
-				self.done |= self.col == self.col_max;
+				self.done |= self.col == self.current_col_max;
 				self.new_line();
 				continue;
 			}
@@ -88,7 +88,7 @@ where
 			}
 
 			// Continue on new line
-			if self.col == self.col_max {
+			if self.col == self.current_col_max {
 				implicit_newline = true;
 				self.new_line();
 			} else {
