@@ -6,7 +6,7 @@ use crate::{
 	error::{Error, Port, Result},
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct EightBitBusPins<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7> {
 	pub rs: RS,
 	pub en: EN,
@@ -18,6 +18,14 @@ pub struct EightBitBusPins<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7> {
 	pub d5: D5,
 	pub d6: D6,
 	pub d7: D7,
+}
+
+impl<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7> core::fmt::Debug
+	for EightBitBusPins<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+{
+	fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+		f.debug_struct("EightBitBusPins").finish()
+	}
 }
 
 #[derive(Debug)]
