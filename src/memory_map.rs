@@ -19,6 +19,7 @@ pub trait DisplayMemoryMap {
 	fn display_size(&self) -> DisplaySize;
 }
 
+#[derive(Debug)]
 pub struct StandardMemoryMap<const WIDTH: u8, const HEIGHT: u8, const LINE_WIDTH: u8 = 40>;
 
 impl<const W: u8, const H: u8, const L: u8> StandardMemoryMap<W, H, L> {
