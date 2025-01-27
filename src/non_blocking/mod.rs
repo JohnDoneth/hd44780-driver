@@ -4,7 +4,7 @@
 use embedded_hal_async::delay::DelayNs;
 
 pub mod bus;
-use bus::DataBus;
+use bus::WritableDataBus;
 
 use crate::charset::CharsetWithFallback;
 use crate::display_size::DisplaySize;
@@ -22,8 +22,8 @@ pub use crate::display_mode;
 
 pub use display_mode::DisplayMode;
 
-pub struct HD44780<B: DataBus, M: DisplayMemoryMap, C: CharsetWithFallback> {
-	bus: B,
+pub struct HD44780<B, M: DisplayMemoryMap, C: CharsetWithFallback> {
+	pub(crate) bus: B,
 	memory_map: M,
 	charset: C,
 	entry_mode: EntryMode,
@@ -39,7 +39,7 @@ use self::error::Error;
 
 impl<B, M, C> HD44780<B, M, C>
 where
-	B: DataBus,
+	B: WritableDataBus,
 	M: DisplayMemoryMap,
 	C: CharsetWithFallback,
 {
