@@ -2,6 +2,11 @@ use core::ops::{Deref, DerefMut};
 
 pub trait Charset {
 	fn code_from_utf8(&self, ch: char) -> Option<u8>;
+
+	#[inline]
+	fn is_whitespace(&self, ch: char) -> bool {
+		ch.is_ascii_whitespace()
+	}
 }
 
 pub trait CharsetWithFallback {
@@ -200,6 +205,11 @@ impl Charset for CharsetA00 {
 			ch if ch.is_whitespace() => Some(b' '), // full-width space
 			_ => None,
 		}
+	}
+
+	#[inline]
+	fn is_whitespace(&self, ch: char) -> bool {
+		ch.is_whitespace() // unicode whitespace
 	}
 }
 
