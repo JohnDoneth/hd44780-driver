@@ -1,0 +1,33 @@
+[package]
+name = "arduino-uno-hdd44780"
+version = "0.1.0"
+authors = ["Oliver Evans <oliverevans96@gmail.com"]
+edition = "2018"
+
+[features]
+no-std = []
+default = ["no-std"]
+
+[dependencies]
+# A panic handler is needed.  This is a crate with the most basic one.
+# The `leonardo-panic` example shows a more elaborate version.
+embedded-hal = "0.2.4"
+numtoa = "0.2.3"
+hd44780-driver = "0.4.0"
+panic-halt = "0.2.0"
+
+[dependencies.arduino-uno]
+git = "https://github.com/Rahix/avr-hal"
+
+# Configure the build for minimal size
+[profile.dev]
+panic = "abort"
+lto = true
+opt-level = "s"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+debug = true
+lto = true
+opt-level = "s"
