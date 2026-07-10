@@ -283,7 +283,7 @@ where
 		self.write_byte(self.charset.code_from_utf8_with_fallback(data), delay)
 	}
 
-	fn write_command<D: DelayNs>(&mut self, cmd: u8, delay: &mut D) -> Result<(), B::Error> {
+	pub fn write_command<D: DelayNs>(&mut self, cmd: u8, delay: &mut D) -> Result<(), B::Error> {
 		self.bus.write(cmd, false, delay)?;
 
 		// Wait for the command to be processed
