@@ -14,7 +14,7 @@ pub(crate) mod non_blocking;
 #[derive(Debug, Clone, Copy)]
 pub struct Unspecified;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct DisplayOptions8Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7> {
 	/// Memory map used for mapping 2D coordinates to the display.
 	pub memory_map: M,
@@ -24,7 +24,23 @@ pub struct DisplayOptions8Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, E
 	pub pins: EightBitBusPins<RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>,
 }
 
-#[derive(Debug, Clone, Copy)]
+impl<M, C, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7> core::fmt::Debug
+	for DisplayOptions8Bit<M, C, RS, EN, D0, D1, D2, D3, D4, D5, D6, D7>
+where
+	M: DisplayMemoryMap + core::fmt::Debug,
+	C: CharsetWithFallback + core::fmt::Debug,
+{
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("DisplayOptions4Bit")
+			.field("memory_map", &self.memory_map)
+			.field("charset", &self.charset)
+			.field("entry_mode", &self.entry_mode)
+			.field("pins", &self.pins)
+			.finish()
+	}
+}
+
+#[derive(Clone, Copy)]
 pub struct DisplayOptions4Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, EN, D4, D5, D6, D7> {
 	/// Memory map used for mapping 2D coordinates to the display.
 	pub memory_map: M,
@@ -32,6 +48,21 @@ pub struct DisplayOptions4Bit<M: DisplayMemoryMap, C: CharsetWithFallback, RS, E
 	pub charset: C,
 	pub entry_mode: EntryMode,
 	pub pins: FourBitBusPins<RS, EN, D4, D5, D6, D7>,
+}
+
+impl<M, C, RS, EN, D4, D5, D6, D7> core::fmt::Debug for DisplayOptions4Bit<M, C, RS, EN, D4, D5, D6, D7>
+where
+	M: DisplayMemoryMap + core::fmt::Debug,
+	C: CharsetWithFallback + core::fmt::Debug,
+{
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("DisplayOptions4Bit")
+			.field("memory_map", &self.memory_map)
+			.field("charset", &self.charset)
+			.field("entry_mode", &self.entry_mode)
+			.field("pins", &self.pins)
+			.finish()
+	}
 }
 
 pub struct DisplayOptionsI2C<M: DisplayMemoryMap, C: CharsetWithFallback, I2C> {

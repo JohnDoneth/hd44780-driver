@@ -1,10 +1,11 @@
 use embedded_hal::delay::DelayNs;
+use core::fmt::Debug;
 use embedded_hal::digital::{self, OutputPin};
 
 use crate::bus::DataBus;
 use crate::error::{Error, Port, Result};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct FourBitBusPins<RS, EN, D4, D5, D6, D7> {
 	pub rs: RS,
 	pub en: EN,
@@ -12,6 +13,12 @@ pub struct FourBitBusPins<RS, EN, D4, D5, D6, D7> {
 	pub d5: D5,
 	pub d6: D6,
 	pub d7: D7,
+}
+
+impl<RS, EN, D4, D5, D6, D7> Debug for FourBitBusPins<RS, EN, D4, D5, D6, D7> {
+	fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+		f.debug_struct("FourBitBusPins").finish()
+	}
 }
 
 #[derive(Debug)]
