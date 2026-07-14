@@ -19,6 +19,7 @@ use entry_mode::{CursorMode, EntryMode};
 pub mod setup;
 
 pub mod charset;
+pub mod character;
 
 pub mod memory_map;
 
