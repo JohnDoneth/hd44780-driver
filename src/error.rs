@@ -104,6 +104,9 @@ pub enum Port {
 	/// Pin `RS` of a [FourBitBus][`crate::bus::FourBitBus`] or
 	/// [EightBitBus][`crate::bus::EightBitBus`].
 	RS,
+	/// Pin `RW` of a [FourBitBus][`crate::bus::FourBitBus`] or
+	/// [EightBitBus][`crate::bus::EightBitBus`].
+	RW,
 	/// Pin `EN` of a [FourBitBus][`crate::bus::FourBitBus`] or
 	/// [EightBitBus][`crate::bus::EightBitBus`].
 	EN,
